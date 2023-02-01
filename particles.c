@@ -42,8 +42,18 @@ void particle_set_single(particle_t *p, float x, float y, float dx, float dy, AL
 
 }
 
-void particle_update(particle_t *p, int max)
+void particle_update(particle_t *p, const int max)
 {
+
+    for(int i = 0; i < max; i++){
+        p[i].x +=  p->dx * 0.5;
+        p[i].y +=  p->dy * 0.5;
+        p[i].rot += 0.9;
+        p[i].ttl--;
+        p[i].alive = p->ttl > 0 ? 1: 0;
+    }
+
+    /*
     for(int i = 0; i < max;i++){
         if(!p->alive && p->ttl <= 0) continue;
 
@@ -69,9 +79,10 @@ void particle_update(particle_t *p, int max)
 
 
     }
+    */
 }
 
-void particle_draw(particle_t *p, ALLEGRO_BITMAP *bmp)
+void particle_draw(const particle_t *p, ALLEGRO_BITMAP *bmp)
 {
     if(!bmp){
         return;
@@ -136,3 +147,11 @@ void particle_generate_explosion(particle_t *p, int x, int y, int spread, int co
 
 }
 
+
+void particle_unset(particle_t **p)
+{
+    if(*p){
+        free((void*)*p);
+        p = NULL;
+    }
+}

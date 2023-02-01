@@ -6,11 +6,14 @@ CONFIG += use_c_linker
 
 SOURCES += \
         main.c \
-        particles.c
+        particles.c \
+        words.c
 
 
 QMAKE_CC=gcc
 QMAKE_CFLAGS +=-std=c11 -Wall -Wextra -Werror -Wno-unused-function -Wno-switch -Wuninitialized -Wstrict-prototypes
+
+DEFINES += DEBUG
 
 contains(QT_ARCH,i386){
     QMAKE_CFLAGS += -m32
@@ -75,4 +78,5 @@ DISTFILES += \
 
 HEADERS += \
     main.h \
-    particles.h
+    particles.h \
+    words.h

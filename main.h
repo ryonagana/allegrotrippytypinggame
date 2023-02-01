@@ -33,8 +33,13 @@ typedef struct mouse_t {
 #define RAD2DEG 57.295779513082320876846364344191
 #define DEG2RAD 0.0174532925199432957692222222222
 
+#ifdef DEBUG
 #define LOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
 #define LOG(...) fprintf(stdout, __VA_ARGS__)
+#else
+#define LOG_ERROR(...)
+#define LOG(...)
+#endif
 
 extern mouse_t g_mouse;
 
