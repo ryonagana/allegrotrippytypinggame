@@ -23,9 +23,11 @@ ALLEGRO_BITMAP  *g_screen = NULL;
 
 
 
-ALLEGRO_SHADER *background_shader = NULL;
+ALLEGRO_SHADER *swirl_shader = NULL;
 ALLEGRO_FONT *title_font = NULL;
 ALLEGRO_FONT *title_font_40 = NULL;
+
+ALLEGRO_SHADER *lavalamp_shader = NULL;
 
 
 ALLEGRO_BITMAP *mj = NULL;
@@ -210,8 +212,8 @@ void unload_window(void){
 
     al_use_shader(NULL);
 
-    if(background_shader){
-        al_destroy_shader(background_shader);
+    if(swirl_shader){
+        al_destroy_shader(swirl_shader);
     }
 
 
@@ -255,23 +257,98 @@ int shader_build(ALLEGRO_SHADER *shader){
 
 static
 void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
+
+
+    al_set_target_bitmap(bg);
+    al_clear_to_color(al_map_rgb(255,255,255));
+    al_set_target_backbuffer(g_dsp);
+
     al_set_target_bitmap(g_screen);
     al_clear_to_color(al_map_rgb(0,0,0));
-    if(!al_use_shader(background_shader)){
+
+
+    if(!al_use_shader(swirl_shader)){
+        LOG("INVALID SHADER background");
+    }
+
+    if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
+         LOG_ERROR("Error: u_resolution not existent in Lavalamp\n");
+    }
+
+
+
+    if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer) / 120.0 )){
+         LOG_ERROR("Error: u_time  not existent in lavalamp\n");
+    }
+
+
+
+    al_draw_bitmap(bg,0,0,0);
+    al_use_shader(NULL);
+
+
+
+    for(int i=0; i < 3; i++){
+        int tx,ty,tw,th;
+
+         al_get_text_dimensions(title_font, title_text[i], &tx,&ty,&tw,&th);
+
+         const  int title_x = (al_get_display_width(g_dsp) / 2) -  tx - 300;
+         const  int title_y = (al_get_display_height(g_dsp) / 2) -  ty - 200;
+
+         if(i == 0){
+
+             al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
+
+             if(!al_use_shader(lavalamp_shader)){
+                 LOG("INVALID SHADER background");
+             }
+
+             if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
+                  LOG_ERROR("Error: u_resolution not existent\n");
+             }
+
+
+
+
+             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer) / 120.0 )){
+                  LOG_ERROR("Error: u_resolution not existent\n");
+             }
+
+
+             al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
+             al_use_shader(NULL);
+             continue;
+
+         }
+
+          al_draw_text(title_font, al_map_rgb(0,255,0), title_x, title_y + (i * 50),0,title_text[i]);
+    }
+
+    al_set_target_backbuffer(g_dsp);
+
+
+    /*
+    al_set_target_bitmap(g_screen);
+    al_clear_to_color(al_map_rgb(0,0,0));
+
+    if(!al_use_shader(lavalamp_shader)){
         LOG("INVALID SHADER background");
     }
 
 
+
     if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
-         LOG_ERROR("Error: u_resolution not existent\n");
+         LOG_ERROR("Error: u_resolution not existent - %s\n", al_get_shader_log(lavalamp_shader) );
     }
 
     if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
-         LOG_ERROR("Error: u_resolution not existent\n");
+         LOG_ERROR("Error: u_time not existent - %s \n",al_get_shader_log(lavalamp_shader));
     }
 
-    al_draw_bitmap(bg,0,0,0);
 
+    al_draw_bitmap(bg,0,0,0);
+    al_use_shader(NULL);
 
 
     al_draw_filled_rectangle( (al_get_display_width(g_dsp) / 2)  - 300,
@@ -297,7 +374,7 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
              al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
 
-             if(!al_use_shader(background_shader)){
+             if(!al_use_shader(swirl_shader)){
                  LOG("INVALID SHADER background");
              }
 
@@ -307,7 +384,7 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
 
 
-             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer) / 5.0 )){
+             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer) / 120.0 )){
                   LOG_ERROR("Error: u_resolution not existent\n");
              }
 
@@ -322,8 +399,40 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
     al_use_shader(NULL);
     al_set_target_backbuffer(g_dsp);
+    */
 }
 
+static
+void main_load_shader(ALLEGRO_SHADER *shader, const char *vert_shader_path, const char *pixel_shader_path){
+
+    if(!vert_shader_path){
+        if(!al_attach_shader_source(shader,ALLEGRO_VERTEX_SHADER, al_get_default_shader_source(ALLEGRO_SHADER_GLSL, ALLEGRO_VERTEX_SHADER))){
+            LOG("Vertex Shader error: %s", al_get_shader_log(shader));
+        }
+    }else {
+        if(!al_attach_shader_source(shader,ALLEGRO_VERTEX_SHADER, vert_shader_path)){
+            LOG("Vertex Shader error: %s", al_get_shader_log(shader));
+        }
+    }
+
+    if(!pixel_shader_path){
+        if(!al_attach_shader_source_file(shader, ALLEGRO_PIXEL_SHADER, al_get_default_shader_source(ALLEGRO_SHADER_GLSL, ALLEGRO_PIXEL_SHADER))){
+            LOG_ERROR("Shader Error: %s\n", al_get_shader_log(shader));
+
+        }
+    }else {
+        if(!al_attach_shader_source_file(shader, ALLEGRO_PIXEL_SHADER, pixel_shader_path )){
+            LOG_ERROR("Shader Error: %s\n", al_get_shader_log(shader));
+
+        }
+    }
+
+
+    if(shader_build(shader) < 0){
+        LOG_ERROR("Shader Error: %s\n", al_get_shader_log(shader));
+    }
+
+}
 
 int main(void)
 {
@@ -348,17 +457,20 @@ int main(void)
     int close = 0;
 
 
-    ALLEGRO_BITMAP *bg = NULL;
+    ALLEGRO_BITMAP *background_bitmap = NULL;
 
-    bg = al_create_bitmap(800,600);
-    al_set_target_bitmap(bg);
+    background_bitmap = al_create_bitmap(800,600);
+    al_set_target_bitmap(background_bitmap);
     al_clear_to_color(al_map_rgb(255,255,255));
     //al_draw_filled_circle(400,300,200,al_map_rgb(255,0,0));
    //al_draw_filled_rectangle(0,0,al_get_bitmap_width(bg) ,al_get_bitmap_height(bg), al_map_rgb(255,255,255));
     al_set_target_backbuffer(g_dsp);
 
 
-    background_shader = al_create_shader(ALLEGRO_SHADER_GLSL);
+    swirl_shader = al_create_shader(ALLEGRO_SHADER_GLSL);
+    assert(swirl_shader != NULL);
+    lavalamp_shader = al_create_shader(ALLEGRO_SHADER_GLSL);
+    assert(lavalamp_shader != NULL);
 
     /*
     if(shader_load_filename(background_shader, ALLEGRO_VERTEX_SHADER, "assets//shader/swirl_glsl.vert") < 0){
@@ -367,21 +479,26 @@ int main(void)
     }
     */
 
-    LOG("Default Vertex Shader: %s", al_get_default_shader_source(ALLEGRO_SHADER_GLSL, ALLEGRO_VERTEX_SHADER));
+    //LOG("Default Vertex Shader: %s", al_get_default_shader_source(ALLEGRO_SHADER_GLSL, ALLEGRO_VERTEX_SHADER));
 
-    if(!al_attach_shader_source(background_shader, ALLEGRO_VERTEX_SHADER,
+
+    /*
+    if(!al_attach_shader_source(swirl_shader, ALLEGRO_VERTEX_SHADER,
              al_get_default_shader_source(ALLEGRO_SHADER_GLSL, ALLEGRO_VERTEX_SHADER))){
-         LOG_ERROR("Default Vertex Saader Error: %s\n", al_get_shader_log(background_shader));
+         LOG_ERROR("Default Vertex Saader Error: %s\n", al_get_shader_log(swirl_shader));
     }
 
-    if(!al_attach_shader_source_file(background_shader, ALLEGRO_PIXEL_SHADER, "assets//shader//swirl_glsl_allegro.frag")){
-        LOG_ERROR("Shader Error: %s\n", al_get_shader_log(background_shader));
+    if(!al_attach_shader_source_file(swirl_shader, ALLEGRO_PIXEL_SHADER, "assets//shader//swirl_glsl_allegro.frag")){
+        LOG_ERROR("Shader Error: %s\n", al_get_shader_log(swirl_shader));
         exit(1);
     }
 
-    if(shader_build(background_shader) < 0){
-        LOG_ERROR("Shader Error: %s\n", al_get_shader_log(background_shader));
+    if(shader_build(swirl_shader) < 0){
+        LOG_ERROR("Shader Error: %s\n", al_get_shader_log(swirl_shader));
     }
+    */
+    main_load_shader(swirl_shader, NULL,"assets//shader//swirl_glsl_allegro.frag");
+    main_load_shader(lavalamp_shader, NULL,"assets//shader//lavalamp_glsl_allegro.frag");
 
 
 
@@ -405,7 +522,7 @@ int main(void)
 
 
             if(g_gamestate == E_GAMESTATE_MENU){
-                render_mainmenu(bg, (float*)res);
+                render_mainmenu(background_bitmap, (float*)res);
                 al_clear_to_color(al_map_rgba(0,0,0,0));
                 al_draw_bitmap(g_screen,0,0,0);
 

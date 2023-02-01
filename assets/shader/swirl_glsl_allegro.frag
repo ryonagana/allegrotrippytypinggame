@@ -11,7 +11,7 @@ uniform float u_time;
 varying vec2 varying_texcoord;
 void main(){
 
-    vec2 coord = (gl_FragCoord.xy/u_resolution);
+    vec2 coord = (gl_FragCoord.xy/u_resolution/2);
     vec3 color = vec3(0.0);
 
     float angle = atan(-coord.y + 0.25, coord.x - 0.50) * 0.1;
@@ -21,9 +21,9 @@ void main(){
     vec4 actual_texture = texture2D(al_tex, varying_texcoord);
 
     color.r += sin(len * 40.0 + angle * 40.0 + u_time);
-    color.g += cos(len * 30.0 + angle * 120.0 - u_time);
+    //color.g += cos(len * 30.0 + angle * 120.0 - u_time);
     color.b += sin(len * 50.0 + angle * 100.0 + 3.0);
 
     //gl_FragColor = texture *  actual_texture * vec4(color,1);
-    gl_FragColor  = actual_texture *  vec4(color,1.0);
+    gl_FragColor  =  vec4(color, 0.05);
 }

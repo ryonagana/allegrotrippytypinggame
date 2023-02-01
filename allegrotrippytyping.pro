@@ -28,6 +28,7 @@ win32: {
     INCLUDEPATH += D:\libs\allegro_x86_64\include
     INCLUDEPATH += D:\projetos\libs\liballegro-5.2.8-release\include
     INCLUDEPATH += D:\projetos\libs\allegro-x86_64\allegro\include
+    INCLUDEPATH += D:\libs\liballegro-5.2.8-x64\include
     INCLUDEPATH += include
 
 
@@ -44,6 +45,7 @@ win32: {
     #LIBS += -LD:\libs\allegro_x86_64\lib
     #LIBS += -LD:\projetos\libs\allegro-x86_64\allegro\lib
     LIBS += -LD:\projetos\libs\liballegro-5.2.8-release\lib
+    LIBS += -LD:\libs\liballegro-5.2.8-x64\lib
     TARGET += game
 
 
@@ -68,8 +70,7 @@ win32: {
 
 DISTFILES += \
     assets/shader/lavalamp_glsl.frag \
-    assets/shader/swirl_glsl.frag \
-    assets/shader/swirl_glsl.vert \
+    assets/shader/lavalamp_glsl_allegro.frag \
     assets/shader/swirl_glsl_allegro.frag
 
 HEADERS += \

@@ -12,7 +12,7 @@ vec3 lavalamp(vec2 coord){
     float angle = atan(-coord.y + 0.25, coord.y - 0.50 ) * 0.1;
     float len = length(coord - vec2(0.5 + u_time/100.0,0.25 + u_time));
 
-    vec3 col = vec3(0.0);
+    vec3 col = vec3(1.0);
 
     col.r += cos(len * 40 + angle * 70 + u_time);
     col.g += sin(len * 10 + angle * 30 + u_time);
