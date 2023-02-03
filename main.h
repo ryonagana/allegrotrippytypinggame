@@ -2,6 +2,16 @@
 #define MAIN_H
 
 #include <allegro5/allegro.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_image.h>
+#include <allegro5/allegro_native_dialog.h>
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_opengl.h>
+#include <allegro5/allegro_physfs.h>
+#include <physfs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,8 +44,8 @@ typedef struct mouse_t {
 #define DEG2RAD 0.0174532925199432957692222222222
 
 #ifdef DEBUG
-#define LOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
-#define LOG(...) fprintf(stdout, __VA_ARGS__)
+#define LOG_ERROR(...) al_append_native_text_log(window_log, __VA_ARGS__)  //fprintf(stderr, __VA_ARGS__)
+#define LOG(...)       al_append_native_text_log(window_log, __VA_ARGS__)
 #else
 #define LOG_ERROR(...)
 #define LOG(...)

@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <ctype.h>
 
+
 void words_start(word_t **wordlist, int size)
 {
 
@@ -70,14 +71,13 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
 
     }
 
+    fclose(fp);
 
     return 0;
 }
 
 wordlist_t *wordlist_sort(const wordlist_t *list, int size)
 {
-    //word_t *tmp = NULL;
-    //tmp = calloc(size, sizeof(word_t));
 
     if(size > list->total_words)
         size = list->total_words;

@@ -72,3 +72,4 @@ Thumbs.db
 *.exe
 
 .qtc_clangd
+vendor/liballegro-5.2.8-static

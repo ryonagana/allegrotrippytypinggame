@@ -1,14 +1,5 @@
 #include "main.h"
 
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_native_dialog.h>
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_opengl.h>
 
 
 #include "particles.h"
@@ -28,9 +19,12 @@ ALLEGRO_FONT *title_font = NULL;
 ALLEGRO_FONT *title_font_40 = NULL;
 
 ALLEGRO_SHADER *lavalamp_shader = NULL;
-
-
 ALLEGRO_BITMAP *mj = NULL;
+
+
+ALLEGRO_TEXTLOG *window_log = NULL;
+
+static ALLEGRO_COLOR text_color;
 
 struct window_status_t {
     char message[255];
@@ -50,6 +44,7 @@ static int32_t g_score = 0;
 enum e_gamestate  {
     E_GAMESTATE_MENU,
     E_GAMESTATE_PLAY,
+    E_GAMESTATE_ROUND_SCREEN,
     E_GAMESTATE_GAMEOVER
 };
 
@@ -61,20 +56,19 @@ enum e_gameplay_state {
     E_GAMEPLAY_WAIT_KEY,
     E_GAMEPLAY_HIT,
     E_GAMEPLAY_RESET,
-    E_GAMEPLAY_MISS,
-    E_GAMEPLAY_RESTART
+    E_GAMEPLAY_MISS
 };
 
 
 static int g_gamestate = E_GAMESTATE_MENU;
 static int g_gameplay = E_GAMEPLAY_START;
 static int g_actual_word = 0;
-
+static int g_round = 1;
 
 
 
 const char title_text[][1023] = { {"TRIPPY TYPING\0"},
-                                  {"Entry for Krampus hack 2020\0"},
+                                  {"Entry for Krampus hack 2020-2020\0"},
                                   {"Originally made with Raylib, converted to liballegro\0"},
                                   {0}
                                 };
@@ -88,6 +82,32 @@ static int g_remaining_words = 0;
 
 static wordlist_t wordlist;
 static wordlist_t *sort_words= NULL;
+
+
+const char credit_name[] = {"Created by Archdark (a.k.a Ryonagana)"};
+
+typedef struct round_modifier_t {
+    float speed;
+    int max_words;
+    int score_min;
+} round_modifier_t;
+
+
+
+static round_modifier_t g_round_modifier[9] = {
+        {1.0f,10,9},
+        {1.2f,15,7},
+        {2.6f,20, 5},
+        {2.8f,25, 4},
+        {2.99f,55,1},
+        {3.5f,55,1},
+        {3.9f,55,1},
+        {4.3f,55,1},
+        {0,0,0}
+};
+
+
+static round_modifier_t actual_modifier;
 
 
 void main_game_reset(void);
@@ -240,7 +260,9 @@ void unload_window(void){
 
 
 
-
+    if(window_log){
+        al_close_native_text_log(window_log);
+    }
 
 
     if(g_timer){
@@ -259,6 +281,7 @@ void unload_window(void){
     if(g_dsp){
         al_destroy_display(g_dsp);
     }
+
 }
 
 
@@ -347,6 +370,15 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
           al_draw_text(title_font, al_map_rgb(0,255,0), title_x, title_y + (i * 50),0,title_text[i]);
     }
 
+
+    const int w = al_get_display_width(g_dsp) / 2;
+
+    int tx,ty,tw,th;
+    al_get_text_dimensions(title_font,credit_name, &tx,&ty,&tw,&th);
+
+    const int h = al_get_display_height(g_dsp);
+    al_draw_textf(title_font, al_map_rgb(0,255,0), w/2,h -th,0, "%s", credit_name);
+
     al_set_target_backbuffer(g_dsp);
 
 
@@ -388,6 +420,8 @@ void main_load_shader(ALLEGRO_SHADER *shader, const char *vert_shader_path, cons
 
 void main_update_gameplay(wordlist_t *sort){
 
+     word_t *word = &sort->words[g_actual_word];
+
     switch(g_gameplay){
     case E_GAMEPLAY_START:
         {
@@ -402,10 +436,17 @@ void main_update_gameplay(wordlist_t *sort){
 
         case E_GAMEPLAY_WAIT_KEY:
         {
-            word_t *word = &sort->words[g_actual_word];
+
 
             if(word->x >=  -al_get_text_width(title_font,word->word) ){
-                word->x--;
+                float round_speed = 0;
+                if((g_round < 4 )){
+                    round_speed = (g_round/2);
+                }else {
+                    round_speed = 1.5f;
+                }
+
+                word->x -= 1.0f * actual_modifier.speed + round_speed;
             }else {
                 g_gameplay = E_GAMEPLAY_RESET;
             }
@@ -416,7 +457,10 @@ void main_update_gameplay(wordlist_t *sort){
 
         case E_GAMEPLAY_HIT:
                 g_score += 10;
+                particle_generate_rain(particle_mj,  word->x,word->y,12, rand() % 350, 0.001f);
                 g_gameplay = E_GAMEPLAY_WAIT_KEY;
+
+                //particle_generate_explosion(particle_mj, word->x,word->y, rand() % 360, 12, rand() % 250);
 
         break;
 
@@ -428,19 +472,18 @@ void main_update_gameplay(wordlist_t *sort){
             memset(hit_buffer,0,sizeof(hit_buffer));
             al_flush_event_queue(g_queue);
             sort->words[g_actual_word].x = al_get_display_width(g_dsp) - al_get_text_width(title_font, sort->words[g_actual_word].word);
+            text_color = al_map_rgba(rand()%255,rand()%255,rand()%255,255);
             g_gameplay = E_GAMEPLAY_WAIT_KEY;
         }
 
         break;
 
         case E_GAMEPLAY_MISS:
-            g_score -= 10;
-            g_gameplay = E_GAMEPLAY_WAIT_KEY;
-        break;
 
-        case E_GAMEPLAY_RESTART:
-             main_game_reset();
-             g_gamestate = E_GAMESTATE_MENU;
+            if(key_buffer[word->hit] >= 97 && key_buffer[word->hit] <=  122){
+                g_score -= 10;
+            }
+            g_gameplay = E_GAMEPLAY_WAIT_KEY;
         break;
     }
 
@@ -471,7 +514,7 @@ void main_render_gameplay(wordlist_t *sort)
 
 
     al_draw_textf(title_font_40, al_map_rgb(220,220,220), w->x+1,w->y+1,0, "%s", w->word);
-    al_draw_textf(title_font_40, al_map_rgb(0,255,0), w->x,w->y,0, "%s", w->word);
+    al_draw_textf(title_font_40, text_color, w->x,w->y,0, "%s", w->word);
     al_draw_bitmap(bmp_text,w->x,w->y, 0);
     al_set_target_backbuffer(g_dsp);
 
@@ -484,13 +527,13 @@ void main_render_gameplay(wordlist_t *sort)
 
 
 void main_game_reset(void){
-    int sort_size = rand() % 10 -1;
-    sort_size = sort_size <= 0 ? rand() % 10 -1 : sort_size;
+    int sort_size = rand() % 10 + actual_modifier.max_words;
+    sort_size = sort_size <= 1 ? rand() % (1 + actual_modifier.max_words) : sort_size;
 
     wordlist_unset(sort_words);
     sort_words  = NULL;
 
-    sort_words = wordlist_sort(&wordlist, sort_size); //sort new words
+    sort_words = wordlist_sort(&wordlist, sort_size);
 
 
     for(int i = 0; i < sort_words->total_words;i++){
@@ -501,9 +544,111 @@ void main_game_reset(void){
     //clean buffers
     memset(key_buffer,0,sizeof(key_buffer));
     memset(hit_buffer,0,sizeof(hit_buffer));
-    g_remaining_words = sort_words->total_words;
+    g_remaining_words = 0;
     g_actual_word = 0;
+    g_gamestate = E_GAMESTATE_MENU;
     g_gameplay = E_GAMEPLAY_START;
+}
+
+void round_start(int round){
+
+    const int64_t now = al_get_timer_count(g_timer) / 60;
+    static int64_t time  = 0;
+    static int round_secs = 0;
+    size_t modifiers_size = sizeof(g_round_modifier)/sizeof(g_round_modifier[0]);
+    int w,h;
+
+    if(now > time + 1){
+        time = now;
+        round_secs++;
+    }
+
+    if(round <= 0){
+          actual_modifier = g_round_modifier[0];
+    }else if((size_t)round > modifiers_size-1){
+        actual_modifier = g_round_modifier[modifiers_size-1];
+    }
+
+    if(round < 2){
+        actual_modifier = g_round_modifier[0];
+
+    }
+
+    if(round > 2 && round <= 4){
+        actual_modifier = g_round_modifier[1];
+    }
+
+
+    if(round >= 4 && round <= 6){
+        actual_modifier = g_round_modifier[2];
+    }
+
+    if(round >= 6 && round <= 8){
+        actual_modifier = g_round_modifier[3];
+    }
+
+
+    if(round >= 8 && round <= 10){
+        actual_modifier = g_round_modifier[3];
+    }
+
+    if(round > 10){
+        actual_modifier = g_round_modifier[4];
+    }
+
+
+    if(round > 15){
+        actual_modifier = g_round_modifier[5];
+    }
+
+    if(round > 20){
+        actual_modifier = g_round_modifier[6];
+    }
+
+    if(round > 25){
+        actual_modifier = g_round_modifier[7];
+    }
+
+
+
+
+    w = al_get_display_width(g_dsp);
+    h = al_get_display_height(g_dsp);
+
+    al_set_target_bitmap(g_screen);
+    al_clear_to_color(al_map_rgb(0,0,0));
+
+    int tw;
+
+    if(round_secs == 0){
+        tw = al_get_text_width(title_font_40, "ROUND");
+        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "ROUND");
+    }
+
+    if(round_secs == 1){
+        char buf[255] = {0};
+        snprintf(buf,sizeof(buf), "%d", round);
+
+        tw = al_get_text_width(title_font_40, buf);
+        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "%s", buf);
+    }
+
+    if(round_secs == 2){
+        tw = al_get_text_width(title_font_40, "TYPE!");
+        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "TYPE!");
+    }
+
+
+    if(round_secs > 2) {
+        g_gamestate = E_GAMESTATE_PLAY;
+        time = 0;
+        round_secs = 0;
+    }
+
+    al_set_target_backbuffer(g_dsp);
+
+
+
 }
 
 
@@ -515,6 +660,28 @@ int main(void)
     window_status_init(&status);
 
     init_allegro(&status);
+
+#ifdef GAME_DATA_PACK
+    ALLEGRO_FILE *gamedata = al_fopen("game.pack","rb");
+
+    if(!gamedata){
+        LOG("game.pack file not found... exiting\n");
+        unload_window();
+        exit(1);
+    }
+
+    PHYSFS_init(NULL);
+
+    if(!PHYSFS_mount("game.pack",NULL,1)){
+        LOG("game.pack failed to mount.. exiting\n");
+        unload_window();
+        exit(1);
+    }
+
+    LOG("PhysFS Mounted at: /");
+    al_set_physfs_file_interface();
+    LOG("PhysFS Started");
+#endif
 
     if(status.error < 0){
         LOG_ERROR("Error: %s", status.message);
@@ -531,6 +698,10 @@ int main(void)
 
 
     ALLEGRO_BITMAP *background_bitmap = NULL;
+
+#ifdef DEBUG
+    window_log = al_open_native_text_log("DEBUG",ALLEGRO_TEXTLOG_MONOSPACE | ALLEGRO_TEXTLOG_NO_CLOSE);
+#endif
 
     background_bitmap = al_create_bitmap(800,600);
     al_set_target_bitmap(background_bitmap);
@@ -559,8 +730,15 @@ int main(void)
 
     al_use_shader(NULL);
 
+    al_set_standard_file_interface();
 
-    words_load_file(&wordlist, "words");
+    if(words_load_file(&wordlist, "words") < 0){
+        LOG("Failed to Load Words File!");
+        unload_window();
+        exit(1);
+    }
+
+    al_set_physfs_file_interface();
 
 
     int sort_size = rand() % 10 -1;
@@ -572,14 +750,18 @@ int main(void)
 
 
     particle_init(&particle_mj, PARTICLES_MAX);
+    text_color = al_map_rgba(rand()%255,rand()%255,rand()%255,255);
+    al_clear_to_color(al_map_rgb(0,0,0));
 
+    actual_modifier = g_round_modifier[0];
+    main_game_reset();
 
     while(!close){
 
         if(redraw){
             redraw = 0;
 
-            al_clear_to_color(al_map_rgb(0,0,0));
+
 
 
             if(g_gamestate == E_GAMESTATE_MENU){
@@ -590,21 +772,37 @@ int main(void)
 
             }
 
-            if(g_gamestate == E_GAMESTATE_PLAY){
-                main_render_gameplay(sort_words);
+            if(g_gamestate == E_GAMESTATE_ROUND_SCREEN){
+                round_start(g_round);
                 al_draw_bitmap(g_screen,0,0,0);
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Score: %.2d", g_score);
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,80,0, "Words: %.2d/%.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
+            }
 
-                if((sort_words->total_words - g_remaining_words) <= 0 ){
-                    g_gameplay = E_GAMEPLAY_RESTART;
+
+            if(g_gamestate == E_GAMESTATE_PLAY){
+
+
+                main_render_gameplay(sort_words);
+
+
+
+                al_draw_bitmap(g_screen,0,0,0);
+                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,5,0, "Score: %.2d", g_score);
+                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d/%.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
+
+                if((sort_words->total_words - g_remaining_words) <= 0){
+                    main_game_reset();
+                    g_gameplay = E_GAMEPLAY_START;
+                    g_gamestate = E_GAMESTATE_ROUND_SCREEN;
+                    g_round++;
                 }
+
+                 particle_draw(particle_mj, mj);
 
             }
 
 
 
-            particle_draw(particle_mj, mj);
+
 
 
             al_flip_display();
@@ -625,51 +823,64 @@ int main(void)
                  if(g_gamestate == E_GAMESTATE_PLAY){
                         main_update_gameplay(sort_words);
 
-
-
                  }
 
+
                 if(g_mouse.button & MOUSE_BT_LEFT){
+
+                    /*
                     particle_generate_explosion(
                                 particle_mj,
                                 g_mouse.x,
                                 g_mouse.y,
                                 rand() % 300 / 2, 6,1);
+                    */
                 }
-
-
 
 
                 word_t *w = &sort_words->words[g_actual_word];
 
 
-                if(key_buffer[w->hit] == w->word[w->hit] && w->hit <= w->len){
+                if(key_buffer[w->hit] == w->word[w->hit] && w->hit <= w->len && key_buffer[w->hit] != ' ' ){
                     hit_buffer[w->hit] = w->word[w->hit];
                     LOG("Hit %c\n", w->word[w->hit]);
                      w->hit++;
-                }else  if(w->hit >= w->len && (sort_words->total_words - g_remaining_words) > 0   ){
+                }else  if(w->hit == w->len && (sort_words->total_words - g_remaining_words) > 0){
                     g_gameplay = E_GAMEPLAY_RESET;
                 }
-
 
 
                 redraw = 1;
             }
 
+            ALLEGRO_KEYBOARD_STATE kbd_state;
+
+            al_get_keyboard_state(&kbd_state);
+
+
+#ifdef DEBUG
+            if(al_key_down(&kbd_state,ALLEGRO_KEY_LCTRL) && al_key_down(&kbd_state,ALLEGRO_KEY_R)){
+                main_game_reset();
+                g_round++;
+                g_gameplay = E_GAMEPLAY_START;
+                g_gamestate = E_GAMESTATE_ROUND_SCREEN;
+            }
+#endif
+
 
             if(e.type == ALLEGRO_EVENT_KEY_UP){
 
-                if(e.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
-                    main_game_reset();
-                    g_gamestate = E_GAMESTATE_MENU;
+                if(e.keyboard.keycode == ALLEGRO_KEY_ESCAPE && g_gamestate == E_GAMESTATE_MENU){
+                        main_game_reset();
+                        g_gamestate = E_GAMESTATE_MENU;
                 }
 
             }
 
             if(e.type == ALLEGRO_EVENT_KEY_CHAR){
 
-                if(g_gameplay != E_GAMESTATE_PLAY){
-                    g_gamestate = E_GAMESTATE_PLAY;
+                if(g_gamestate == E_GAMESTATE_MENU){
+                    g_gamestate = E_GAMESTATE_ROUND_SCREEN;
                 }
 
                 if(g_gameplay == E_GAMESTATE_PLAY){
@@ -677,8 +888,6 @@ int main(void)
 
 
                     word_t *w = &sort_words->words[g_actual_word];
-
-
 
 
                     if(key  >= 97  && key <= 122){
@@ -690,12 +899,6 @@ int main(void)
                             g_gameplay = E_GAMEPLAY_HIT;
                         }
 
-
-
-
-
-
-                        LOG("%c\n", key);
                     }
                 }
 
@@ -734,6 +937,8 @@ int main(void)
         }while(!al_event_queue_is_empty(g_queue));
     }
 
+
+
     if(swirl_shader){
         al_destroy_shader(swirl_shader);
     }
@@ -755,6 +960,10 @@ int main(void)
     }
 
     particle_unset(&particle_mj);
+
+#ifdef GAME_DATA_PACK
+    PHYSFS_deinit();
+#endif
 
     wordlist_unset(sort_words);
     unload_window();

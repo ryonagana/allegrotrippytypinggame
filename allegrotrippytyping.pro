@@ -14,6 +14,7 @@ QMAKE_CC=gcc
 QMAKE_CFLAGS +=-std=c11 -Wall -Wextra -Werror -Wno-unused-function -Wno-switch -Wuninitialized -Wstrict-prototypes
 
 DEFINES += DEBUG
+DEFINES += GAME_DATA_PACK
 
 contains(QT_ARCH,i386){
     QMAKE_CFLAGS += -m32
@@ -22,11 +23,15 @@ contains(QT_ARCH,i386){
 }
 
 QMAKE_CFLAGS_DEBUG += -Og -g -Wpedantic
-QMAKE_CFLAGS_RELEASE += -Wall -Wextra -s -O2 -Werror -fomit-frame-pointer
+QMAKE_CFLAGS_RELEASE += -Wall -Wextra -s -O3 -Werror -fomit-frame-pointer
+
+TARGET += game
 
 
 win32: {
 
+
+    QMAKE_CFLAGS += -static
 
     INCLUDEPATH += D:\libs\allegro_x86_64\include
     INCLUDEPATH += D:\projetos\libs\liballegro-5.2.8-release\include
@@ -47,12 +52,21 @@ win32: {
 
     #LIBS += -LD:\libs\allegro_x86_64\lib
     #LIBS += -LD:\projetos\libs\allegro-x86_64\allegro\lib
-    LIBS += -LD:\projetos\libs\liballegro-5.2.8-release\lib
-    LIBS += -LD:\libs\liballegro-5.2.8-x64\lib
-    TARGET += game
 
 
-    LIBS += -lallegro_monolith.dll
+
+   # LIBS += -lallegro_monolith.dll
+
+    LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/include
+    LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/lib
+
+
+    #WINDOWS LIBS
+    #LIBS +=  -lkernel32 -lgdiplus -luuid -lkernel32 -lwinmm -lpsapi -lopengl32 -lglu32 -luser32 -lcomdlg32 -lgdi32 -lshell32 -lole32 -ladvapi32 -lws2_32 -lshlwapi
+    #LIBS += -ldumb -lFLAC -lvorbisfile -lfreetype -logg -lpng16 -lzlib -lwebp
+    #LIBS += -lallegro-static -lallegro_acodec-static -lallegro_audio-static -lallegro_font-static -lallegro_ttf-static  -lallegro_dialog-static -lallegro_primitives-static -lallegro_image-static -lallegro_physfs-static
+    #LIBS  += -lallegro_monolith-static
+    LIBS  += -lallegro -lallegro_acodec -lallegro_audio -lallegro_primitives -lallegro_dialog -lallegro_font -lallegro_ttf -lallegro_image -lallegro_physfs
 
     #libphysfs (x64)
     #LIBS += -L$$PWD/../../libs/physfs-3.0.1/build-winx64/ -lphysfs
@@ -60,11 +74,11 @@ win32: {
     LIBS += -LD:\projetos\libs\physfs-3.0.1\build-winx64
     LIBS +=  -LD:\programacao\C\openskigame\libs\physfs\mingw_x86_64\lib
 
+
+
+    INCLUDEPATH += vendor/physfs-3.0.1-mingw_x64/include
+    DEPENDPATH +=  vendor/physfs-3.0.1-mingw_x64/lib
     LIBS += -lphysfs
-
-    INCLUDEPATH += $$PWD/../../libs/physfs-3.0.1/build-winx64
-    DEPENDPATH += $$PWD/../../libs/physfs-3.0.1/build-winx64
-
 
     LIBS += -lmingw32
 

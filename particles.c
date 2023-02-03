@@ -19,6 +19,8 @@ void particle_init(particle_t **p, int max)
         tmp[i].rot = (rand() % 3600) / 10.0f;
         tmp[i].ttl = 0;
         tmp[i].alive = 0;
+        tmp[i].fade = 0.0f;
+        tmp[i].fade_speed = 0.0;
     }
 
     *p = tmp;
@@ -27,8 +29,11 @@ void particle_init(particle_t **p, int max)
 
 }
 
-void particle_set_single(particle_t *p, float x, float y, float dx, float dy, ALLEGRO_COLOR color, float size, float rot, int ttl, int alive)
+void particle_set_single(particle_t *p, float x, float y, float dx, float dy, ALLEGRO_COLOR color, float size, float rot, int ttl, int alive, float fade_speed)
 {
+
+    if(!p ) return;
+
     p->x = x;
     p->y = y;
     p->dx = dx;
@@ -38,6 +43,8 @@ void particle_set_single(particle_t *p, float x, float y, float dx, float dy, AL
     p->rot = rot;
     p->ttl = ttl;
     p->alive = alive;
+    p->fade = 1.0;
+    p->fade_speed = fade_speed;
 
 
 }
@@ -46,11 +53,16 @@ void particle_update(particle_t *p, const int max)
 {
 
     for(int i = 0; i < max; i++){
-        p[i].x +=  p->dx * 0.5;
-        p[i].y +=  p->dy * 0.5;
-        p[i].rot += 0.9;
+        if(p[i].alive) continue;
+        p[i].x +=  p->dx * 1.5;
+        p[i].y +=  p->dy * 1.5;
         p[i].ttl--;
+        p[i].rot += 0.09f;
         p[i].alive = p->ttl > 0 ? 1: 0;
+        p[i].fade -= p[i].fade_speed;
+        p[i].color.a -= p[i].fade;
+
+
     }
 
     /*
@@ -84,11 +96,18 @@ void particle_update(particle_t *p, const int max)
 
 void particle_draw(const particle_t *p, ALLEGRO_BITMAP *bmp)
 {
+
+    ALLEGRO_STATE state;
+
+    al_store_state(&state, ALLEGRO_STATE_BLENDER);
+
     if(!bmp){
         return;
     }
 
     if(p->alive){
+
+        al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
         al_draw_tinted_scaled_rotated_bitmap_region(bmp,
                                                     0,
                                                     0,
@@ -101,11 +120,13 @@ void particle_draw(const particle_t *p, ALLEGRO_BITMAP *bmp)
                                                     p->dy + p->y,
                                                     p->size,
                                                     p->size,
-                                                    p->rot * RAD2DEG,
+                                                    p->rot,
                                                     0
                                                     );
 
     }
+
+    al_restore_state(&state);
 }
 
 particle_t *particle_free_slot(particle_t *p, int max)
@@ -117,8 +138,21 @@ particle_t *particle_free_slot(particle_t *p, int max)
 }
 
 
+void particle_generate_rain(particle_t *p, int x, int y, int count, int life, float fade){
 
-void particle_generate_explosion(particle_t *p, int x, int y, int spread, int count, int life)
+    (void)p;(void)x;(void)y;(void)count;(void)life;(void)fade;
+    particle_t *tmp =  NULL;
+
+    for(int i = 0;i < count;i++){
+        tmp = particle_free_slot(p,PARTICLES_MAX);
+
+        particle_set_single(tmp, x,y,0,1.0f,al_map_rgb(255,0,0), 2.0,1.0,30,1,0.08f);
+    }
+
+}
+
+
+void particle_generate_explosion(particle_t *p, int x, int y, int spread, int count, int life, float fade)
 {
     int i;
     particle_t *tmp;
@@ -130,18 +164,18 @@ void particle_generate_explosion(particle_t *p, int x, int y, int spread, int co
 
         if(spread <= 0) spread = 1;
         if(tmp != NULL){
-            int spread_val_x = x + rand() % spread - (spread / 2);  //GetRandomValue(0, spread) - spread / 2;
-            int spread_val_y = y; //GetRandomValue(0, spread) - spread / 2;
+            int spread_val_x = rand() % spread - (spread / 2);  //GetRandomValue(0, spread) - spread / 2;
+            int spread_val_y = rand() % spread - (spread / 2); //GetRandomValue(0, spread) - spread / 2;
             ALLEGRO_COLOR c = al_map_rgba(rand() % 255, rand() % 255, rand() % 255,rand() % 128);
 
             //Color c = (Color){ GetRandomValue(0,255), GetRandomValue(0,255), GetRandomValue(0,255), GetRandomValue(0,255) };
             float size = rand() % 30 / 20.0f;
-            float sx =   rand() % 100 / 100 - 0.5;
-            float sy =   rand() % 100 / 100 - 0.5;
+            float sx =   x + rand() % 100 / 100 - 0.5;
+            float sy =   y + rand() % 100 / 100 - 0.5;
             float rot =  rand() % 3600 / 10;
             int ttl = life ? life : rand() % 450;
 
-            particle_set_single(tmp,spread_val_x, spread_val_y, sx,sy, c, size, rot,ttl,1);
+            particle_set_single(tmp,spread_val_x, spread_val_y, sx,sy, c, size, rot,ttl,1, fade);
         }
     }
 
