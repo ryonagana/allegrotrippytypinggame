@@ -146,7 +146,19 @@ void particle_generate_rain(particle_t *p, int x, int y, int count, int life, fl
     for(int i = 0;i < count;i++){
         tmp = particle_free_slot(p,PARTICLES_MAX);
 
-        particle_set_single(tmp, x,y,0,1.0f,al_map_rgb(255,0,0), 2.0,1.0,30,1,0.08f);
+        //int spread = (rand() % 3600 / 10) / 4;
+        //int spread_val_x = rand() % spread - (spread / 2);  //GetRandomValue(0, spread) - spread / 2;
+        //int spread_val_y = rand() % spread - (spread / 2); //GetRandomValue(0, spread) - spread / 2;
+        ALLEGRO_COLOR c = al_map_rgba(rand() % 255, rand() % 255, rand() % 255,rand() % 128);
+
+        //Color c = (Color){ GetRandomValue(0,255), GetRandomValue(0,255), GetRandomValue(0,255), GetRandomValue(0,255) };
+        float size = rand() % 30 / 20.0f;
+        //float sx =   x + rand() % 100 / 100 - 0.5;
+        //float sy =   y + rand() % 100 / 100 - 0.5;
+        float rot =  rand() % 3600 / 10;
+        int ttl = life ? life : rand() % 450;
+
+        particle_set_single(tmp,x,y,0,-1.0f,c, size, rot,ttl,1,0.08f);
     }
 
 }

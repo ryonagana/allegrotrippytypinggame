@@ -66,7 +66,7 @@ win32: {
     #LIBS += -ldumb -lFLAC -lvorbisfile -lfreetype -logg -lpng16 -lzlib -lwebp
     #LIBS += -lallegro-static -lallegro_acodec-static -lallegro_audio-static -lallegro_font-static -lallegro_ttf-static  -lallegro_dialog-static -lallegro_primitives-static -lallegro_image-static -lallegro_physfs-static
     #LIBS  += -lallegro_monolith-static
-    LIBS  += -lallegro -lallegro_acodec -lallegro_audio -lallegro_primitives -lallegro_dialog -lallegro_font -lallegro_ttf -lallegro_image -lallegro_physfs
+    LIBS  += -lallegro -lallegro_acodec -lallegro_audio -lallegro_dialog -lallegro_font -lallegro_ttf -lallegro_image -lallegro_physfs
 
     #libphysfs (x64)
     #LIBS += -L$$PWD/../../libs/physfs-3.0.1/build-winx64/ -lphysfs
@@ -88,7 +88,8 @@ win32: {
 DISTFILES += \
     assets/shader/lavalamp_glsl.frag \
     assets/shader/lavalamp_glsl_allegro.frag \
-    assets/shader/swirl_glsl_allegro.frag
+    assets/shader/swirl_glsl_allegro.frag \
+    readme.md
 
 HEADERS += \
     main.h \

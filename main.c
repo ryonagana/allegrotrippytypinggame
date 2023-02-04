@@ -5,6 +5,8 @@
 #include "particles.h"
 #include "words.h"
 
+ALLEGRO_VOICE *voice = NULL;
+ALLEGRO_MIXER *mixer = NULL;
 
 
 ALLEGRO_DISPLAY *g_dsp = NULL;
@@ -107,10 +109,35 @@ static round_modifier_t g_round_modifier[9] = {
 };
 
 
+typedef struct sfx_t {
+    ALLEGRO_SAMPLE *sample;
+    ALLEGRO_SAMPLE_INSTANCE* inst;
+}sfx_t;
+
+sfx_t title_bgm;
+sfx_t hippie_bgm;
+sfx_t round_bgm;
+sfx_t hit_sfx;
+sfx_t miss_sfx;
+
+
 static round_modifier_t actual_modifier;
 
 
 void main_game_reset(void);
+
+
+//sounds
+void main_game_init_sounds(void);
+void main_game_unload_sounds(void);
+
+
+
+void sfx_play(const sfx_t *sfx, float vol, float pan, float speed, ALLEGRO_PLAYMODE mode);
+void sfx_stop(sfx_t *sfx);
+void sfx_destroy(sfx_t *sfx);
+int sfx_load(sfx_t *sfx, const  char* filepath);
+void sfx_stop_all(void);
 
 static
 void window_status_set_message(struct window_status_t *status, const char *src){
@@ -179,11 +206,13 @@ int init_allegro(struct window_status_t *status){
         return -1;
     }
 
+    /*
     if(!al_init_primitives_addon()){
         window_status_set_message(status,"Allegro Primitives  Failed to Init!");
         status->error = 2;
         return -1;
     }
+    */
 
     return 0;
 }
@@ -458,6 +487,7 @@ void main_update_gameplay(wordlist_t *sort){
         case E_GAMEPLAY_HIT:
                 g_score += 10;
                 particle_generate_rain(particle_mj,  word->x,word->y,12, rand() % 350, 0.001f);
+
                 g_gameplay = E_GAMEPLAY_WAIT_KEY;
 
                 //particle_generate_explosion(particle_mj, word->x,word->y, rand() % 360, 12, rand() % 250);
@@ -473,6 +503,7 @@ void main_update_gameplay(wordlist_t *sort){
             al_flush_event_queue(g_queue);
             sort->words[g_actual_word].x = al_get_display_width(g_dsp) - al_get_text_width(title_font, sort->words[g_actual_word].word);
             text_color = al_map_rgba(rand()%255,rand()%255,rand()%255,255);
+            sfx_play(&hit_sfx,1.0,.5f, 1.0,ALLEGRO_PLAYMODE_ONCE);
             g_gameplay = E_GAMEPLAY_WAIT_KEY;
         }
 
@@ -502,6 +533,9 @@ void main_render_gameplay(wordlist_t *sort)
 
     al_set_target_bitmap(g_screen);
     al_clear_to_color(al_map_rgb(0,0,0));
+
+
+
 
 
 
@@ -672,7 +706,7 @@ int main(void)
 
     PHYSFS_init(NULL);
 
-    if(!PHYSFS_mount("game.pack",NULL,1)){
+    if(!PHYSFS_mount("game.pack","//",1)){
         LOG("game.pack failed to mount.. exiting\n");
         unload_window();
         exit(1);
@@ -688,7 +722,19 @@ int main(void)
         exit(1);
     }
 
-    if(window_create_window("Trippy Typing", 800,600,0,1,1) < 0){
+    int adapters = al_get_num_video_adapters();
+    ALLEGRO_MONITOR_INFO monitor_info;
+
+    int monitor = adapters > 1 ? 0 :1;
+
+    if(!al_get_monitor_info(monitor, &monitor_info)){
+        LOG_ERROR("error cant get monitor info");
+        exit(1);
+    }
+
+
+
+    if(window_create_window("Trippy Typing", 1024,768,0,1,1) < 0){
        LOG_ERROR("Error! Game Cannot be Initialize");
        exit(1);
     }
@@ -697,18 +743,32 @@ int main(void)
     int close = 0;
 
 
-    ALLEGRO_BITMAP *background_bitmap = NULL;
 
 #ifdef DEBUG
     window_log = al_open_native_text_log("DEBUG",ALLEGRO_TEXTLOG_MONOSPACE | ALLEGRO_TEXTLOG_NO_CLOSE);
 #endif
 
-    background_bitmap = al_create_bitmap(800,600);
+    ALLEGRO_BITMAP *background_bitmap = NULL;
+
+    background_bitmap = al_create_bitmap(al_get_display_width(g_dsp),al_get_display_height(g_dsp));
     al_set_target_bitmap(background_bitmap);
     al_clear_to_color(al_map_rgb(255,255,255));
     //al_draw_filled_circle(400,300,200,al_map_rgb(255,0,0));
    //al_draw_filled_rectangle(0,0,al_get_bitmap_width(bg) ,al_get_bitmap_height(bg), al_map_rgb(255,255,255));
     al_set_target_backbuffer(g_dsp);
+
+
+    ALLEGRO_BITMAP *bg_gameplay = NULL;
+    bg_gameplay = al_create_bitmap(al_get_display_width(g_dsp),al_get_display_height(g_dsp));
+    al_set_target_bitmap(bg_gameplay);
+    al_clear_to_color(al_map_rgb(255,255,255));
+    //al_draw_filled_circle(400,300,200,al_map_rgb(255,0,0));
+   //al_draw_filled_rectangle(0,0,al_get_bitmap_width(bg) ,al_get_bitmap_height(bg), al_map_rgb(255,255,255));
+    al_set_target_backbuffer(g_dsp);
+
+
+
+    main_game_init_sounds();
 
 
     swirl_shader = al_create_shader(ALLEGRO_SHADER_GLSL);
@@ -729,6 +789,10 @@ int main(void)
 
 
     al_use_shader(NULL);
+
+
+
+
 
     al_set_standard_file_interface();
 
@@ -756,6 +820,10 @@ int main(void)
     actual_modifier = g_round_modifier[0];
     main_game_reset();
 
+
+
+    sfx_play(&hippie_bgm, 1.0f,.5f,1.0f, ALLEGRO_PLAYMODE_LOOP);
+
     while(!close){
 
         if(redraw){
@@ -765,8 +833,9 @@ int main(void)
 
 
             if(g_gamestate == E_GAMESTATE_MENU){
-                render_mainmenu(background_bitmap, (float*)res);
-                al_clear_to_color(al_map_rgba(0,0,0,0));
+
+                 render_mainmenu(background_bitmap, (float*)res);
+                 al_clear_to_color(al_map_rgba(0,0,0,0));
                  al_draw_bitmap(g_screen,0,0,0);
 
 
@@ -780,14 +849,30 @@ int main(void)
 
             if(g_gamestate == E_GAMESTATE_PLAY){
 
+                al_set_target_bitmap(bg_gameplay);
+                al_clear_to_color(al_map_rgb(255,255,255));
+                al_set_target_backbuffer(g_dsp);
+
+
 
                 main_render_gameplay(sort_words);
-
-
-
                 al_draw_bitmap(g_screen,0,0,0);
+
+
+                al_use_shader(lavalamp_shader);
+                if(!al_set_shader_float_vector("u_resolution",1,(float*)res, 2)){
+                    LOG("uniform u_resolution failed");
+                }
+
+                if(!al_set_shader_float("u_time",al_get_time())){
+                    LOG("uniform u_time failed");
+                }
+                al_draw_bitmap(bg_gameplay,0,0,0);
+                al_use_shader(NULL);
+
+
                 al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,5,0, "Score: %.2d", g_score);
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d/%.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
+                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d / %.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
 
                 if((sort_words->total_words - g_remaining_words) <= 0){
                     main_game_reset();
@@ -796,9 +881,12 @@ int main(void)
                     g_round++;
                 }
 
-                 particle_draw(particle_mj, mj);
+
 
             }
+
+
+            particle_draw(particle_mj, mj);
 
 
 
@@ -821,8 +909,15 @@ int main(void)
                  particle_update(particle_mj, PARTICLES_MAX);
 
                  if(g_gamestate == E_GAMESTATE_PLAY){
+                        sfx_stop_all();
+                        sfx_play(&hippie_bgm, .4f,.5f,1.0f, _ALLEGRO_PLAYMODE_STREAM_LOOP_ONCE);
                         main_update_gameplay(sort_words);
 
+                 }
+
+                 if(g_gamestate == E_GAMESTATE_ROUND_SCREEN){
+                     sfx_stop_all();
+                     sfx_play(&round_bgm,1.0f, 0.5f, 1.0f, ALLEGRO_PLAYMODE_ONCE);
                  }
 
 
@@ -880,10 +975,12 @@ int main(void)
             if(e.type == ALLEGRO_EVENT_KEY_CHAR){
 
                 if(g_gamestate == E_GAMESTATE_MENU){
+                    sfx_stop(&hippie_bgm);
                     g_gamestate = E_GAMESTATE_ROUND_SCREEN;
                 }
 
                 if(g_gameplay == E_GAMESTATE_PLAY){
+                    sfx_stop(&round_bgm);
                     const int key = e.keyboard.unichar;
 
 
@@ -937,7 +1034,7 @@ int main(void)
         }while(!al_event_queue_is_empty(g_queue));
     }
 
-
+    main_game_unload_sounds();
 
     if(swirl_shader){
         al_destroy_shader(swirl_shader);
@@ -959,6 +1056,10 @@ int main(void)
         al_destroy_bitmap(background_bitmap);
     }
 
+    if(bg_gameplay){
+        al_destroy_bitmap(bg_gameplay);
+    }
+
     particle_unset(&particle_mj);
 
 #ifdef GAME_DATA_PACK
@@ -969,4 +1070,91 @@ int main(void)
     unload_window();
 
     return 0;
+}
+
+
+int sfx_load(sfx_t *sfx, const  char* filepath){
+     sfx->sample = al_load_sample(filepath);
+
+    if(!hippie_bgm.sample){
+        return -1;
+    }
+
+    sfx->inst = al_create_sample_instance(sfx->sample);
+
+    if(!al_attach_sample_instance_to_mixer(sfx->inst,mixer)){
+        LOG("error: failed to  attach sfx instance to mixer");
+    }
+    return 0;
+
+}
+
+void main_game_init_sounds(void){
+
+    voice = al_create_voice(44100, ALLEGRO_AUDIO_DEPTH_INT16, ALLEGRO_CHANNEL_CONF_2);
+    if(!voice){
+        LOG("Error: Allegro Voice Failed");
+    }
+
+    mixer = al_create_mixer(44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
+
+    if(!mixer){
+        LOG("Error: Allegro Voice Failed");
+    }
+
+    if(!al_attach_mixer_to_voice(mixer,voice)){
+         LOG("Error: Allegro trying to attach mixer to voice");
+    }
+
+    al_set_default_mixer(mixer);
+    al_reserve_samples(4);
+
+
+    if(sfx_load(&hippie_bgm, "assets//bgm//hippie_loop.ogg") < 0){
+        LOG("BGM hippie loop not loaded");
+    }
+
+    if(sfx_load(&round_bgm, "assets//bgm//hippie_cue.ogg") < 0){
+        LOG("BGM hippie cue not loaded");
+    }
+
+
+    if(sfx_load(&hit_sfx, "assets//sfx//hit.ogg") < 0){
+        LOG("BGM Hit not loaded");
+    }
+
+}
+void main_game_unload_sounds(void){
+
+        sfx_destroy(&hippie_bgm);
+        sfx_destroy(&round_bgm);
+        sfx_destroy(&hit_sfx);
+}
+
+
+void sfx_play(const sfx_t *sfx, float vol, float pan, float speed, ALLEGRO_PLAYMODE mode){
+
+    al_set_sample_instance_gain(sfx->inst, vol);
+    al_set_sample_instance_pan(sfx->inst, pan);
+    al_set_sample_instance_speed(sfx->inst, speed);
+    al_set_sample_instance_playmode(sfx->inst, mode);
+    al_play_sample_instance(sfx->inst);
+}
+void sfx_destroy(sfx_t *sfx){
+
+    if(sfx){
+        if(sfx->sample)  al_destroy_sample(sfx->sample);
+        if(sfx->inst) al_destroy_sample_instance(sfx->inst);
+    }
+
+}
+
+void sfx_stop_all(void){
+    al_stop_samples();
+}
+
+void sfx_stop(sfx_t *sfx){
+    if(sfx->inst){
+        al_stop_sample_instance(sfx->inst);
+    }
 }
