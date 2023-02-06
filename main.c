@@ -142,8 +142,7 @@ void sfx_stop_all(void);
 static
 void window_status_set_message(struct window_status_t *status, const char *src){
 
-    int len = strnlen(src,sizeof(*src));
-    strncpy(status->message, src,len);
+    strncpy(status->message, src,255);
     return;
 
 }
@@ -722,15 +721,7 @@ int main(void)
         exit(1);
     }
 
-    int adapters = al_get_num_video_adapters();
-    ALLEGRO_MONITOR_INFO monitor_info;
 
-    int monitor = adapters > 1 ? 0 :1;
-
-    if(!al_get_monitor_info(monitor, &monitor_info)){
-        LOG_ERROR("error cant get monitor info");
-        exit(1);
-    }
 
 
 
@@ -864,7 +855,7 @@ int main(void)
                     LOG("uniform u_resolution failed");
                 }
 
-                if(!al_set_shader_float("u_time",al_get_time())){
+                if(!al_set_shader_float("u_time",(float)al_get_timer_count(g_timer)/60)){
                     LOG("uniform u_time failed");
                 }
                 al_draw_bitmap(bg_gameplay,0,0,0);
@@ -910,7 +901,7 @@ int main(void)
 
                  if(g_gamestate == E_GAMESTATE_PLAY){
                         sfx_stop_all();
-                        sfx_play(&hippie_bgm, .4f,.5f,1.0f, _ALLEGRO_PLAYMODE_STREAM_LOOP_ONCE);
+                        sfx_play(&hippie_bgm, .4f,.5f,1.0f, ALLEGRO_PLAYMODE_ONCE);
                         main_update_gameplay(sort_words);
 
                  }

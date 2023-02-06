@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern ALLEGRO_DISPLAY *g_dsp;
 extern ALLEGRO_EVENT_QUEUE *g_queue;

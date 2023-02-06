@@ -13,18 +13,17 @@ varying vec2 varying_texcoord;
 
 void main(){
 
-    vec2 coord = (gl_FragCoord.xy/u_resolution);
-    vec4 actual_texture = texture2D(al_tex, varying_texcoord);
+    vec2 coord = gl_FragCoord.xy/u_resolution.xy;
 
     float angle = atan(-coord.y + 0.25, coord.y - 0.50 ) * 0.1;
-    float len = length(coord - vec2(0.5 + u_time/100.0,0.25 + u_time));
+    float len = length(coord - vec2(0.5 + u_time/25.0,0.1 + u_time));
 
-    vec4 col = vec4(0.0);
+    vec3 col = vec3(0.0);
 
-    col.r += cos(len * 40 + angle * 70 + u_time);
-    col.g += sin(len * 10 + angle * 30 - u_time);
-    col.b += cos(len * 60 + angle * 90 + u_time);
+    col.r += cos(len * 10.0 + angle * 100.016 + u_time);
+    col.g += sin(len * 10.0 + angle * 60.576 - u_time);
+    col.b += cos(len * 10.0 + angle * 90.0 + u_time);
 
 
-    gl_FragColor =  col;
+    gl_FragColor =  vec4(col,0.01);
 }

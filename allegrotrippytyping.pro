@@ -13,8 +13,7 @@ SOURCES += \
 QMAKE_CC=gcc
 QMAKE_CFLAGS +=-std=c11 -Wall -Wextra -Werror -Wno-unused-function -Wno-switch -Wuninitialized -Wstrict-prototypes
 
-DEFINES += DEBUG
-DEFINES += GAME_DATA_PACK
+
 
 contains(QT_ARCH,i386){
     QMAKE_CFLAGS += -m32
@@ -25,10 +24,15 @@ contains(QT_ARCH,i386){
 QMAKE_CFLAGS_DEBUG += -Og -g -Wpedantic
 QMAKE_CFLAGS_RELEASE += -Wall -Wextra -s -O3 -Werror -fomit-frame-pointer
 
-TARGET += game
-
+#DEFINES += GAME_DATA_PACK
 
 win32: {
+
+    debug:{
+        DEFINES += DEBUG
+    }
+
+
 
 
     QMAKE_CFLAGS += -static
@@ -82,6 +86,19 @@ win32: {
 
     LIBS += -lmingw32
 
+
+}
+
+unix : {
+    debug:{
+        DEFINES += DEBUG
+    }
+
+
+    INCLUDEPATH += /usr/include
+    LIBS += -L/usr/lib64
+
+    LIBS += -lallegro -lallegro_audio -lallegro_acodec -lallegro_font -lallegro_ttf -lallegro_dialog -lallegro_image -lallegro_physfs
 
 }
 
