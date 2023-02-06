@@ -127,6 +127,9 @@ static round_modifier_t actual_modifier;
 void main_game_reset(void);
 
 
+static int g_life = 3;
+
+
 //sounds
 void main_game_init_sounds(void);
 void main_game_unload_sounds(void);
@@ -468,7 +471,7 @@ void main_update_gameplay(wordlist_t *sort){
 
             if(word->x >=  -al_get_text_width(title_font,word->word) ){
                 float round_speed = 0;
-                if((g_round < 4 )){
+                if((g_round < 2 )){
                     round_speed = (g_round/2);
                 }else {
                     round_speed = 1.5f;
@@ -476,6 +479,16 @@ void main_update_gameplay(wordlist_t *sort){
 
                 word->x -= 1.0f * actual_modifier.speed + round_speed;
             }else {
+
+                if(g_life <= 0){
+                    main_game_reset();
+                    g_gameplay = E_GAMEPLAY_RESET;
+                    g_gamestate = E_GAMESTATE_GAMEOVER;
+
+                }
+
+                g_life--;
+                g_score -= 10 * abs((g_round / 2) - 10);
                 g_gameplay = E_GAMEPLAY_RESET;
             }
 
@@ -540,7 +553,11 @@ void main_render_gameplay(wordlist_t *sort)
 
     al_set_target_bitmap(bmp_text);
     //al_clear_to_color(al_map_rgb(0,0,0));
-    al_draw_textf(title_font_40, al_map_rgb(255,0,0), 0,0,0, "%s", hit_buffer);
+    //al_draw_textf(title_font_40, al_map_rgb(255,0,0), 0,0,0, "%s", hit_buffer);
+
+    ALLEGRO_USTR *hit_buffer_utf8 = al_ustr_newf("%s",hit_buffer);
+    al_draw_ustr(title_font_40, al_map_rgb(255,0,0),0, 0, 0, hit_buffer_utf8);
+    al_ustr_free(hit_buffer_utf8);
 
     al_set_target_bitmap(g_screen);
 
@@ -548,6 +565,9 @@ void main_render_gameplay(wordlist_t *sort)
 
     al_draw_textf(title_font_40, al_map_rgb(220,220,220), w->x+1,w->y+1,0, "%s", w->word);
     al_draw_textf(title_font_40, text_color, w->x,w->y,0, "%s", w->word);
+    //al_draw_ustr(title_font_40, al_map_rgb(220,220,220),w->x+1, w->y+1, 0, w->word_utf8);
+    //al_draw_ustr(title_font_40, text_color,w->x, w->y, 0, w->word_utf8);
+
     al_draw_bitmap(bmp_text,w->x,w->y, 0);
     al_set_target_backbuffer(g_dsp);
 
@@ -563,7 +583,7 @@ void main_game_reset(void){
     int sort_size = rand() % 10 + actual_modifier.max_words;
     sort_size = sort_size <= 1 ? rand() % (1 + actual_modifier.max_words) : sort_size;
 
-    wordlist_unset(sort_words);
+    wordlist_unset(&sort_words);
     sort_words  = NULL;
 
     sort_words = wordlist_sort(&wordlist, sort_size);
@@ -571,7 +591,17 @@ void main_game_reset(void){
 
     for(int i = 0; i < sort_words->total_words;i++){
         sort_words->words[i].x = al_get_display_width(g_dsp) - al_get_text_width(title_font_40, sort_words->words[i].word);
-        sort_words->words[i].y = rand() % al_get_display_height(g_dsp) / 2;
+        sort_words->words[i].y = rand() % (al_get_display_height(g_dsp) / 2) - 100;
+
+        if(sort_words->words[i].y < al_get_display_height(g_dsp)){
+            sort_words->words[i].y =  (al_get_display_height(g_dsp) / 2);
+        }
+
+        if(sort_words->words[i].y < 0){
+            sort_words->words[i].y =  (al_get_display_height(g_dsp) / 2);
+        }
+
+
     }
 
     //clean buffers
@@ -652,19 +682,24 @@ void round_start(int round){
     al_clear_to_color(al_map_rgb(0,0,0));
 
     int tw;
-
-    if(round_secs == 0){
-        tw = al_get_text_width(title_font_40, "ROUND");
-        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "ROUND");
-    }
+    char buf[56] = {0};
 
     if(round_secs == 1){
+
+        snprintf(buf,sizeof(buf), "ROUND %.2d", round);
+
+        tw = al_get_text_width(title_font_40, buf);
+        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0,"%s", buf);
+    }
+
+    /*
+    if(round_secs == 2){
         char buf[255] = {0};
         snprintf(buf,sizeof(buf), "%d", round);
 
         tw = al_get_text_width(title_font_40, buf);
         al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "%s", buf);
-    }
+    }*/
 
     if(round_secs == 2){
         tw = al_get_text_width(title_font_40, "TYPE!");
@@ -672,7 +707,7 @@ void round_start(int round){
     }
 
 
-    if(round_secs > 2) {
+    if(round_secs >= 3) {
         g_gamestate = E_GAMESTATE_PLAY;
         time = 0;
         round_secs = 0;
@@ -685,7 +720,7 @@ void round_start(int round){
 }
 
 
-int main(void)
+int main(int argc, char **argv)
 {
     srand(time(0));
 
@@ -725,7 +760,7 @@ int main(void)
 
 
 
-    if(window_create_window("Trippy Typing", 1024,768,0,1,1) < 0){
+    if(window_create_window("Trippy Typing", 1330,768,0,1,1) < 0){
        LOG_ERROR("Error! Game Cannot be Initialize");
        exit(1);
     }
@@ -787,10 +822,20 @@ int main(void)
 
     al_set_standard_file_interface();
 
-    if(words_load_file(&wordlist, "words") < 0){
-        LOG("Failed to Load Words File!");
-        unload_window();
-        exit(1);
+    if(argc < 2){
+        if(words_load_file(&wordlist, "words") < 0){
+            LOG("Failed to Load Words File!");
+            unload_window();
+            exit(1);
+        }
+    }else {
+        char buf[127] = {0};
+        strncpy(buf,argv[1],sizeof(buf));
+        if(words_load_file(&wordlist, buf) < 0){
+            LOG("Failed to Load Words File!");
+            unload_window();
+            exit(1);
+        }
     }
 
     al_set_physfs_file_interface();
@@ -864,6 +909,7 @@ int main(void)
 
                 al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,5,0, "Score: %.2d", g_score);
                 al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d / %.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
+                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,100,0, "Lives: %.2d", g_life);
 
                 if((sort_words->total_words - g_remaining_words) <= 0){
                     main_game_reset();
@@ -874,6 +920,22 @@ int main(void)
 
 
 
+            }
+
+            if(g_gamestate == E_GAMESTATE_GAMEOVER){
+                sfx_stop_all();
+                char buf[25] = {0};
+                snprintf(buf,sizeof(buf),"GAME OVER!");
+
+                int w = (al_get_display_width(g_dsp) / 2)-al_get_text_width(title_font_40,buf);
+                int h = al_get_display_height(g_dsp) / 2;
+
+                al_set_target_bitmap(g_screen);
+                al_clear_to_color(al_map_rgb(0,0,0));
+                al_draw_text(title_font_40, al_map_rgb(0,255,0),w,h,0, buf);
+                al_set_target_backbuffer(g_dsp);
+
+                al_draw_bitmap(g_screen,0,0,0);
             }
 
 
@@ -905,6 +967,18 @@ int main(void)
                         main_update_gameplay(sort_words);
 
                  }
+
+
+                 if(g_gamestate == E_GAMESTATE_GAMEOVER){
+                    main_game_reset();
+                    g_round = 1;
+                    g_life = 3;
+                    g_score = 0;
+                    actual_modifier = g_round_modifier[0];
+                    g_gamestate = E_GAMESTATE_GAMEOVER;
+                    g_gameplay  = E_GAMEPLAY_RESET;
+                 }
+
 
                  if(g_gamestate == E_GAMESTATE_ROUND_SCREEN){
                      sfx_stop_all();
@@ -970,6 +1044,12 @@ int main(void)
                     g_gamestate = E_GAMESTATE_ROUND_SCREEN;
                 }
 
+                if(g_gamestate == E_GAMESTATE_GAMEOVER){
+                    sfx_play(&round_bgm,1.0,0.5,0.3,ALLEGRO_PLAYMODE_ONCE);
+                    g_gameplay = E_GAMEPLAY_RESET;
+                    g_gamestate = E_GAMESTATE_MENU;
+                }
+
                 if(g_gameplay == E_GAMESTATE_PLAY){
                     sfx_stop(&round_bgm);
                     const int key = e.keyboard.unichar;
@@ -979,9 +1059,9 @@ int main(void)
 
 
                     if(key  >= 97  && key <= 122){
-                        key_buffer[w->hit] = key;
+                        key_buffer[w->hit%255] = key;
 
-                        if(key_buffer[w->hit] != w->word[w->hit]){
+                        if(key_buffer[w->hit%255] != w->word[w->hit%255]){
                             g_gameplay = E_GAMEPLAY_MISS;
                         }else {
                             g_gameplay = E_GAMEPLAY_HIT;
@@ -1053,11 +1133,13 @@ int main(void)
 
     particle_unset(&particle_mj);
 
+    wordlist_unset(&sort_words);
+
 #ifdef GAME_DATA_PACK
     PHYSFS_deinit();
 #endif
 
-    wordlist_unset(sort_words);
+
     unload_window();
 
     return 0;

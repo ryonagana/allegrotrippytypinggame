@@ -6,12 +6,14 @@
 #include <ctype.h>
 
 
+
 void words_start(word_t **wordlist, int size)
 {
 
     word_t *tmp = NULL;
 
     tmp = calloc(size+1, sizeof(word_t));
+    tmp->word_utf8 = NULL;
     assert(tmp != NULL);
     *wordlist = tmp;
 
@@ -58,14 +60,22 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
         if(fgets(line,255,fp) != NULL){
 
             int size = strlen(line);
+            ALLEGRO_USTR *word_ustr = al_ustr_new_from_buffer(line,size);
             strncpy(words_tmp[i].word, line, size);
 
+
             for(int k = 0; k <words_tmp[k].len;k++){
-                words_tmp[i].word[k] = tolower(words_tmp[i].word[k]);
+                char letter = words_tmp[i].word[k];
+
+                words_tmp[i].word[k] = tolower(letter);
             }
 
+            words_tmp[i].word_utf8 = al_ustr_dup(word_ustr);
             words_tmp[i].len = size-1;
             words_tmp[i].hit = 0;
+
+            al_ustr_free(word_ustr);
+
         }
 
 
@@ -97,6 +107,7 @@ wordlist_t *wordlist_sort(const wordlist_t *list, int size)
 
         word_t *word = &list->words[rnd];
         memcpy(&list_tmp->words[i], word, sizeof(word_t));
+        //list_tmp->words[i].word_utf8 = word->word_utf8;
     }
 
 
@@ -106,15 +117,10 @@ wordlist_t *wordlist_sort(const wordlist_t *list, int size)
     return list_tmp;
 }
 
-void wordlist_unset(wordlist_t *wordlist)
+void wordlist_unset(wordlist_t **wordlist)
 {
-    if(wordlist){
-        if(wordlist->words){
-            free(wordlist->words);
-            wordlist->words  = NULL;
-        }
+    wordlist_t *wl = *wordlist;
 
-        free(wordlist);
-        wordlist = NULL;
-    }
+    free(wl->words);
+    wl->words = NULL;
 }

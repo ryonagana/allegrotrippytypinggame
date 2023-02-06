@@ -99,7 +99,7 @@ unix : {
     LIBS += -L/usr/lib64
 
     LIBS += -lallegro -lallegro_audio -lallegro_acodec -lallegro_font -lallegro_ttf -lallegro_dialog -lallegro_image -lallegro_physfs
-
+    LIBS += -lphysfs
 }
 
 DISTFILES += \

@@ -1,9 +1,10 @@
 #ifndef WORDS_H
 #define WORDS_H
-
+#include <allegro5/allegro5.h>
 
 typedef struct word_t {
     char word[255];
+    ALLEGRO_USTR *word_utf8;
     int  len;
     int hit;
     float x;
@@ -22,6 +23,6 @@ int words_load_file(wordlist_t *wordlist, const char *filepath);
 wordlist_t *wordlist_sort(const wordlist_t *list, int size);
 
 
-void wordlist_unset(wordlist_t *wordlist);
+void wordlist_unset(wordlist_t **wordlist);
 
 #endif // WORDS_H
