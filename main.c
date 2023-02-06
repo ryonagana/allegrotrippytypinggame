@@ -24,7 +24,7 @@ ALLEGRO_SHADER *lavalamp_shader = NULL;
 ALLEGRO_BITMAP *mj = NULL;
 
 
-ALLEGRO_TEXTLOG *window_log = NULL;
+static ALLEGRO_TEXTLOG *window_log = NULL;
 
 static ALLEGRO_COLOR text_color;
 
@@ -50,9 +50,6 @@ enum e_gamestate  {
     E_GAMESTATE_GAMEOVER
 };
 
-
-
-
 enum e_gameplay_state {
     E_GAMEPLAY_START,
     E_GAMEPLAY_WAIT_KEY,
@@ -62,14 +59,14 @@ enum e_gameplay_state {
 };
 
 
-static int g_gamestate = E_GAMESTATE_MENU;
+static int g_gamestate = E_GAMESTATE_PLAY;
 static int g_gameplay = E_GAMEPLAY_START;
 static int g_actual_word = 0;
-static int g_round = 1;
+static int32_t g_round = 1;
 
 
 
-const char title_text[][1023] = { {"TRIPPY TYPING\0"},
+const char title_text[][1023] = { {" Allegro TRIPPY TYPING\0"},
                                   {"Entry for Krampus hack 2020-2020\0"},
                                   {"Originally made with Raylib, converted to liballegro\0"},
                                   {0}
@@ -332,7 +329,7 @@ int shader_build(ALLEGRO_SHADER *shader){
 
 
 static
-void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
+void main_render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
 
     al_set_target_bitmap(bg);
@@ -376,7 +373,7 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
              al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
 
-             if(!al_use_shader(lavalamp_shader)){
+             if(!al_use_shader(swirl_shader)){
                  LOG("INVALID SHADER background");
              }
 
@@ -387,7 +384,7 @@ void render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
 
 
-             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer) / 120.0 )){
+             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer))){
                   LOG_ERROR("Error: u_resolution not existent\n");
              }
 
@@ -536,45 +533,27 @@ void main_update_gameplay(wordlist_t *sort){
 void main_render_gameplay(wordlist_t *sort)
 {
     word_t *w = &sort->words[g_actual_word];
-    ALLEGRO_BITMAP *bmp_text = NULL;
-    int width = al_get_text_width(title_font_40, w->word);
-
-
-
-    bmp_text = al_create_bitmap(width,30);
 
     al_set_target_bitmap(g_screen);
     al_clear_to_color(al_map_rgb(0,0,0));
-
-
-
-
-
-
-    al_set_target_bitmap(bmp_text);
-    //al_clear_to_color(al_map_rgb(0,0,0));
-    //al_draw_textf(title_font_40, al_map_rgb(255,0,0), 0,0,0, "%s", hit_buffer);
-
     ALLEGRO_USTR *hit_buffer_utf8 = al_ustr_newf("%s",hit_buffer);
-    al_draw_ustr(title_font_40, al_map_rgb(255,0,0),0, 0, 0, hit_buffer_utf8);
-    al_ustr_free(hit_buffer_utf8);
-
-    al_set_target_bitmap(g_screen);
-
-
 
     al_draw_textf(title_font_40, al_map_rgb(220,220,220), w->x+1,w->y+1,0, "%s", w->word);
     al_draw_textf(title_font_40, text_color, w->x,w->y,0, "%s", w->word);
     //al_draw_ustr(title_font_40, al_map_rgb(220,220,220),w->x+1, w->y+1, 0, w->word_utf8);
     //al_draw_ustr(title_font_40, text_color,w->x, w->y, 0, w->word_utf8);
+    al_draw_ustr(title_font_40, al_map_rgb(255,0,0),w->x, w->y,0,hit_buffer_utf8);
 
-    al_draw_bitmap(bmp_text,w->x,w->y, 0);
+    al_ustr_free(hit_buffer_utf8);
+
+
+
+
+    al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,5,0, "Score: %.2d", g_score);
+    al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d / %.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
+    al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,100,0, "Lives: %.2d", g_life);
+
     al_set_target_backbuffer(g_dsp);
-
-    al_destroy_bitmap(bmp_text);
-
-
-
 
 }
 
@@ -609,8 +588,8 @@ void main_game_reset(void){
     memset(hit_buffer,0,sizeof(hit_buffer));
     g_remaining_words = 0;
     g_actual_word = 0;
-    g_gamestate = E_GAMESTATE_MENU;
-    g_gameplay = E_GAMEPLAY_START;
+    //g_gamestate = E_GAMESTATE_MENU;
+    //g_gameplay = E_GAMEPLAY_START;
 }
 
 void round_start(int round){
@@ -642,16 +621,16 @@ void round_start(int round){
     }
 
 
-    if(round >= 4 && round <= 6){
+    if(round > 4 && round <= 6){
         actual_modifier = g_round_modifier[2];
     }
 
-    if(round >= 6 && round <= 8){
+    if(round > 6 && round <= 8){
         actual_modifier = g_round_modifier[3];
     }
 
 
-    if(round >= 8 && round <= 10){
+    if(round > 8 && round <= 10){
         actual_modifier = g_round_modifier[3];
     }
 
@@ -691,15 +670,6 @@ void round_start(int round){
         tw = al_get_text_width(title_font_40, buf);
         al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0,"%s", buf);
     }
-
-    /*
-    if(round_secs == 2){
-        char buf[255] = {0};
-        snprintf(buf,sizeof(buf), "%d", round);
-
-        tw = al_get_text_width(title_font_40, buf);
-        al_draw_textf(title_font_40, al_map_rgb(255,255,0), (w/2)-tw,h/2,0, "%s", buf);
-    }*/
 
     if(round_secs == 2){
         tw = al_get_text_width(title_font_40, "TYPE!");
@@ -866,11 +836,12 @@ int main(int argc, char **argv)
             redraw = 0;
 
 
+            al_clear_to_color(al_map_rgb(0,0,0));
 
 
             if(g_gamestate == E_GAMESTATE_MENU){
 
-                 render_mainmenu(background_bitmap, (float*)res);
+                 main_render_mainmenu(background_bitmap, (float*)res);
                  al_clear_to_color(al_map_rgba(0,0,0,0));
                  al_draw_bitmap(g_screen,0,0,0);
 
@@ -885,31 +856,30 @@ int main(int argc, char **argv)
 
             if(g_gamestate == E_GAMESTATE_PLAY){
 
-                al_set_target_bitmap(bg_gameplay);
-                al_clear_to_color(al_map_rgb(255,255,255));
-                al_set_target_backbuffer(g_dsp);
 
+                if(!al_use_shader(swirl_shader)){
+                    LOG("INVALID SHADER background");
+                }
 
+                if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
+                     LOG_ERROR("Error: u_resolution not existent\n");
+                }
+
+                if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
+                     LOG_ERROR("Error: u_resolution not existent\n");
+                }
+
+                al_draw_bitmap(bg_gameplay,0,0,0);
+                al_use_shader(NULL);
 
                 main_render_gameplay(sort_words);
                 al_draw_bitmap(g_screen,0,0,0);
 
 
-                al_use_shader(lavalamp_shader);
-                if(!al_set_shader_float_vector("u_resolution",1,(float*)res, 2)){
-                    LOG("uniform u_resolution failed");
-                }
-
-                if(!al_set_shader_float("u_time",(float)al_get_timer_count(g_timer)/60)){
-                    LOG("uniform u_time failed");
-                }
-                al_draw_bitmap(bg_gameplay,0,0,0);
-                al_use_shader(NULL);
 
 
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,5,0, "Score: %.2d", g_score);
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,50,0, "Words: %.2d / %.2d", sort_words->total_words, sort_words->total_words - g_remaining_words);
-                al_draw_textf(title_font_40, al_map_rgb(0,255,0),0,100,0, "Lives: %.2d", g_life);
+
+
 
                 if((sort_words->total_words - g_remaining_words) <= 0){
                     main_game_reset();
@@ -917,7 +887,6 @@ int main(int argc, char **argv)
                     g_gamestate = E_GAMESTATE_ROUND_SCREEN;
                     g_round++;
                 }
-
 
 
             }
@@ -1001,9 +970,9 @@ int main(int argc, char **argv)
                 word_t *w = &sort_words->words[g_actual_word];
 
 
-                if(key_buffer[w->hit] == w->word[w->hit] && w->hit <= w->len && key_buffer[w->hit] != ' ' ){
-                    hit_buffer[w->hit] = w->word[w->hit];
-                    LOG("Hit %c\n", w->word[w->hit]);
+                if(key_buffer[w->hit%255] == w->word[w->hit%255] && w->hit <= w->len && key_buffer[w->hit] != ' ' ){
+                    hit_buffer[w->hit%255] = w->word[w->hit%255];
+                    LOG("Hit %c\n", w->word[w->hit%255]);
                      w->hit++;
                 }else  if(w->hit == w->len && (sort_words->total_words - g_remaining_words) > 0){
                     g_gameplay = E_GAMEPLAY_RESET;

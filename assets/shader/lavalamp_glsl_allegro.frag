@@ -10,21 +10,38 @@ uniform float u_time;
 varying vec2 varying_texcoord;
 
 
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 
 void main(){
-
-    vec2 coord = (gl_FragCoord.xy/u_resolution.xy);
-    vec4 actual_texture = texture2D(al_tex, varying_texcoord);
-
-    float angle = atan(-coord.y + 0.25, coord.y - 0.50 ) * 0.1;
-    float len = length(coord - vec2(0.5 + u_time/100.0,0.25 + u_time));
-
-    vec4 col = vec4(0.0);
-
-    col.r += cos(len * 40 + angle * 70 + u_time);
-    col.g += sin(len * 10 + angle * 30 - u_time);
-    col.b += cos(len * 60 + angle * 90 + u_time);
+    vec2 uv =  (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
 
 
-    gl_FragColor =  col;
+    vec3 ball[5];
+
+    ball[0] = vec3(sin(u_time) * 0.2 + 0.2 * rand(vec2(0.0, 0.9)), cos(u_time) * 0.1 + 0.4, 0.1 );
+    ball[1] = vec3(sin(u_time) * 0.01 + 0.1, cos(u_time) * 0.07 + 0.4, 0.1 );
+    ball[2] = vec3(1.0,0.6,0.03);
+    ball[3] = vec3(sin(u_time) * 0.1 + 0.4 + rand(vec2(0.0, 0.5)) , cos(u_time) * 0.01 + 0.4 + rand(vec2(0.0, 1.0)), 0.1 );
+    ball[4] = vec3(sin(u_time) * 0.1 + 0.2  *  rand(vec2(0.0, 0.9)),cos(u_time) * 1.0 *  rand(vec2(0.0, 0.9)) ,.2);
+
+
+    float f = 0.0;
+
+    for(int i = 0; i < 5;i++){
+        f += ball[i].z  / distance(ball[i].xy, uv);
+    }
+
+    f = clamp(f,0.0,1.0);
+    f = f == 1.0 ? 1.0 : 0.0;
+
+
+    float r = rand(vec2(0.0,1.0)) / f + 0.1;
+
+    vec3 col = vec3(f * 0.8,f * 0.3,f  * 0.2);
+
+
+    gl_FragColor =  vec4(col,1.0);
 }
