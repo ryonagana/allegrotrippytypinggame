@@ -101,7 +101,7 @@ static round_modifier_t g_round_modifier[9] = {
         {2.99f,55,1},
         {3.5f,55,1},
         {3.9f,55,1},
-        {4.3f,55,1},
+        {6.3f,55,1},
         {0,0,0}
 };
 
@@ -116,7 +116,8 @@ sfx_t hippie_bgm;
 sfx_t round_bgm;
 sfx_t hit_sfx;
 sfx_t miss_sfx;
-
+sfx_t lost_sfx;
+sfx_t reset_sfx;
 
 static round_modifier_t actual_modifier;
 
@@ -371,7 +372,7 @@ void main_render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
          if(i == 0){
 
-             al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
+             //al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
 
              if(!al_use_shader(swirl_shader)){
                  LOG("INVALID SHADER background");
@@ -384,7 +385,7 @@ void main_render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
 
 
-             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer))){
+             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
                   LOG_ERROR("Error: u_resolution not existent\n");
              }
 
@@ -483,7 +484,7 @@ void main_update_gameplay(wordlist_t *sort){
                     g_gamestate = E_GAMESTATE_GAMEOVER;
 
                 }
-
+                sfx_play(&lost_sfx,1.0f,0.5f,1.0f, ALLEGRO_PLAYMODE_LOOP_ONCE);
                 g_life--;
                 g_score -= 10 * abs((g_round / 2) - 10);
                 g_gameplay = E_GAMEPLAY_RESET;
@@ -496,7 +497,7 @@ void main_update_gameplay(wordlist_t *sort){
         case E_GAMEPLAY_HIT:
                 g_score += 10;
                 particle_generate_rain(particle_mj,  word->x,word->y,12, rand() % 350, 0.001f);
-
+                sfx_play(&hit_sfx,1.0,.5f, 1.0,ALLEGRO_PLAYMODE_ONCE);
                 g_gameplay = E_GAMEPLAY_WAIT_KEY;
 
                 //particle_generate_explosion(particle_mj, word->x,word->y, rand() % 360, 12, rand() % 250);
@@ -521,7 +522,9 @@ void main_update_gameplay(wordlist_t *sort){
         case E_GAMEPLAY_MISS:
 
             if(key_buffer[word->hit] >= 97 && key_buffer[word->hit] <=  122){
+                sfx_play(&miss_sfx,1.0f,0.5f,1.0f, ALLEGRO_PLAYMODE_ONCE);
                 g_score -= 10;
+
             }
             g_gameplay = E_GAMEPLAY_WAIT_KEY;
         break;
@@ -869,11 +872,14 @@ int main(int argc, char **argv)
                      LOG_ERROR("Error: u_resolution not existent\n");
                 }
 
+
                 al_draw_bitmap(bg_gameplay,0,0,0);
                 al_use_shader(NULL);
 
                 main_render_gameplay(sort_words);
-                al_draw_bitmap(g_screen,0,0,0);
+
+
+                //al_draw_bitmap(g_screen,0,0,0);
 
 
 
@@ -976,6 +982,7 @@ int main(int argc, char **argv)
                      w->hit++;
                 }else  if(w->hit == w->len && (sort_words->total_words - g_remaining_words) > 0){
                     g_gameplay = E_GAMEPLAY_RESET;
+                    sfx_play(&reset_sfx,1.0f,0.5,1.0f, ALLEGRO_PLAYMODE_ONCE);
                 }
 
 
@@ -1161,9 +1168,23 @@ void main_game_init_sounds(void){
     }
 
 
-    if(sfx_load(&hit_sfx, "assets//sfx//hit.ogg") < 0){
+    if(sfx_load(&hit_sfx, "assets//sfx//hit_word.wav") < 0){
         LOG("BGM Hit not loaded");
     }
+
+
+    if(sfx_load(&miss_sfx, "assets//sfx//miss_word.wav") < 0){
+        LOG("BGM Miss Word not loaded");
+    }
+
+    if(sfx_load(&lost_sfx,"assets//sfx//lost.wav") < 0 ){
+         LOG("BGM Lost not loaded");
+    }
+
+    if(sfx_load(&reset_sfx,"assets//sfx//reset.wav") < 0 ){
+         LOG("BGM Lost not loaded");
+    }
+
 
 }
 void main_game_unload_sounds(void){
