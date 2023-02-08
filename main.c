@@ -34,6 +34,13 @@ struct window_status_t {
 };
 
 
+
+
+
+ALLEGRO_BITMAP *bg_gameplay = NULL;
+ALLEGRO_BITMAP *background_bitmap = NULL;
+
+
 particle_t *particle_mj = NULL;
 mouse_t g_mouse = {0};
 
@@ -484,7 +491,7 @@ void main_update_gameplay(wordlist_t *sort){
                     g_gamestate = E_GAMESTATE_GAMEOVER;
 
                 }
-                sfx_play(&lost_sfx,1.0f,0.5f,1.0f, ALLEGRO_PLAYMODE_LOOP_ONCE);
+                sfx_play(&lost_sfx,1.0f,0.5f,1.0f, ALLEGRO_PLAYMODE_ONCE);
                 g_life--;
                 g_score -= 10 * abs((g_round / 2) - 10);
                 g_gameplay = E_GAMEPLAY_RESET;
@@ -541,6 +548,35 @@ void main_render_gameplay(wordlist_t *sort)
     al_clear_to_color(al_map_rgb(0,0,0));
     ALLEGRO_USTR *hit_buffer_utf8 = al_ustr_newf("%s",hit_buffer);
 
+    const float res[][2] = {
+                                {al_get_display_width(g_dsp), al_get_display_height(g_dsp)},
+                                {0}
+    };
+
+
+
+
+
+
+
+    if(!al_use_shader(lavalamp_shader)){
+        LOG("INVALID SHADER background");
+    }
+
+    if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
+         LOG_ERROR("Error: u_resolution not existent\n");
+    }
+
+    if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
+         LOG_ERROR("Error: u_resolution not existent\n");
+    }
+
+    al_draw_bitmap(bg_gameplay,0,0,0);
+    al_use_shader(NULL);
+
+
+
+
     al_draw_textf(title_font_40, al_map_rgb(220,220,220), w->x+1,w->y+1,0, "%s", w->word);
     al_draw_textf(title_font_40, text_color, w->x,w->y,0, "%s", w->word);
     //al_draw_ustr(title_font_40, al_map_rgb(220,220,220),w->x+1, w->y+1, 0, w->word_utf8);
@@ -548,6 +584,8 @@ void main_render_gameplay(wordlist_t *sort)
     al_draw_ustr(title_font_40, al_map_rgb(255,0,0),w->x, w->y,0,hit_buffer_utf8);
 
     al_ustr_free(hit_buffer_utf8);
+
+
 
 
 
@@ -747,7 +785,6 @@ int main(int argc, char **argv)
     window_log = al_open_native_text_log("DEBUG",ALLEGRO_TEXTLOG_MONOSPACE | ALLEGRO_TEXTLOG_NO_CLOSE);
 #endif
 
-    ALLEGRO_BITMAP *background_bitmap = NULL;
 
     background_bitmap = al_create_bitmap(al_get_display_width(g_dsp),al_get_display_height(g_dsp));
     al_set_target_bitmap(background_bitmap);
@@ -757,7 +794,6 @@ int main(int argc, char **argv)
     al_set_target_backbuffer(g_dsp);
 
 
-    ALLEGRO_BITMAP *bg_gameplay = NULL;
     bg_gameplay = al_create_bitmap(al_get_display_width(g_dsp),al_get_display_height(g_dsp));
     al_set_target_bitmap(bg_gameplay);
     al_clear_to_color(al_map_rgb(255,255,255));
@@ -781,11 +817,6 @@ int main(int argc, char **argv)
 
 
 
-    const float res[][2] = {
-                                {al_get_display_width(g_dsp), al_get_display_height(g_dsp)},
-                                {0}
-                           };
-
 
     al_use_shader(NULL);
 
@@ -803,7 +834,7 @@ int main(int argc, char **argv)
         }
     }else {
         char buf[127] = {0};
-        strncpy(buf,argv[1],sizeof(buf));
+        strncpy(buf,argv[1],sizeof(buf)-1);
         if(words_load_file(&wordlist, buf) < 0){
             LOG("Failed to Load Words File!");
             unload_window();
@@ -833,6 +864,12 @@ int main(int argc, char **argv)
 
     sfx_play(&hippie_bgm, 1.0f,.5f,1.0f, ALLEGRO_PLAYMODE_LOOP);
 
+    const float res[][2] = {
+                                {al_get_display_width(g_dsp), al_get_display_height(g_dsp)},
+                                {0}
+    };
+
+
     while(!close){
 
         if(redraw){
@@ -860,29 +897,8 @@ int main(int argc, char **argv)
             if(g_gamestate == E_GAMESTATE_PLAY){
 
 
-                if(!al_use_shader(swirl_shader)){
-                    LOG("INVALID SHADER background");
-                }
-
-                if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
-                     LOG_ERROR("Error: u_resolution not existent\n");
-                }
-
-                if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
-                     LOG_ERROR("Error: u_resolution not existent\n");
-                }
-
-
-                al_draw_bitmap(bg_gameplay,0,0,0);
-                al_use_shader(NULL);
-
                 main_render_gameplay(sort_words);
-
-
-                //al_draw_bitmap(g_screen,0,0,0);
-
-
-
+                al_draw_bitmap(g_screen,0,0,0);
 
 
 
