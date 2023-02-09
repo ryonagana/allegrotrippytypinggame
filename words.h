@@ -4,7 +4,6 @@
 
 typedef struct word_t {
     char word[255];
-    ALLEGRO_USTR *word_utf8;
     int  len;
     int hit;
     float x;

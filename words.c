@@ -13,7 +13,7 @@ void words_start(word_t **wordlist, int size)
     word_t *tmp = NULL;
 
     tmp = calloc(size+1, sizeof(word_t));
-    tmp->word_utf8 = NULL;
+    //tmp->word_utf8 = NULL;
     assert(tmp != NULL);
     *wordlist = tmp;
 
@@ -59,9 +59,8 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
 
         if(fgets(line,255,fp) != NULL){
 
-            int size = strlen(line);
-            ALLEGRO_USTR *word_ustr = al_ustr_new_from_buffer(line,size);
-            strncpy(words_tmp[i].word, line, size);
+            int size = strlen(line)-1;
+            strncpy(words_tmp[i].word, line, 255);
 
 
             for(int k = 0; k <words_tmp[k].len;k++){
@@ -70,11 +69,11 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
                 words_tmp[i].word[k] = tolower(letter);
             }
 
-            words_tmp[i].word_utf8 = al_ustr_dup(word_ustr);
+
             words_tmp[i].len = size-1;
             words_tmp[i].hit = 0;
 
-            al_ustr_free(word_ustr);
+
 
         }
 

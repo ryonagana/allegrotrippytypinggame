@@ -24,13 +24,13 @@ contains(QT_ARCH,i386){
 QMAKE_CFLAGS_DEBUG += -Og -g -Wpedantic
 QMAKE_CFLAGS_RELEASE += -Wall -Wextra -s -O3 -Werror -fomit-frame-pointer
 
-#DEFINES += GAME_DATA_PACK
+DEFINES += GAME_DATA_PACK
+#DEFINES += DEBUG
+
 
 win32: {
 
-    debug:{
-        DEFINES += DEBUG
-    }
+
 
 
 
@@ -61,16 +61,18 @@ win32: {
 
    # LIBS += -lallegro_monolith.dll
 
-    LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/include
+    INCLUDEPATH += $$PWD/vendor/liballegro-5.2.8-static/include
     LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/lib
 
 
     #WINDOWS LIBS
+    #LIBS  +=  -lallegro_monolith-static
+    #LIBS  +=   -logg -lFLAC -lvorbis -ldumb -lopus -lfreetype -lpng16 -lwebp -ljpeg
+    #LIBS  +=  -lgdi32 -luser32 -lkernel32 -lopengl32 -lz -lwinmm -lShlwapi -lOle32 -lstdc++ -lcomdlg32 -ldsound
+    #LIBS +=   -lopus -ljpeg -ldsound -ldumb -lFLAC -lvorbisfile -lfreetype -logg -lpng16 -lzlib -lwebp -lstdc++
     #LIBS +=  -lkernel32 -lgdiplus -luuid -lkernel32 -lwinmm -lpsapi -lopengl32 -lglu32 -luser32 -lcomdlg32 -lgdi32 -lshell32 -lole32 -ladvapi32 -lws2_32 -lshlwapi
-    #LIBS += -ldumb -lFLAC -lvorbisfile -lfreetype -logg -lpng16 -lzlib -lwebp
     #LIBS += -lallegro-static -lallegro_acodec-static -lallegro_audio-static -lallegro_font-static -lallegro_ttf-static  -lallegro_dialog-static -lallegro_primitives-static -lallegro_image-static -lallegro_physfs-static
-    #LIBS  += -lallegro_monolith-static
-    LIBS  += -lallegro -lallegro_acodec -lallegro_audio -lallegro_dialog -lallegro_font -lallegro_ttf -lallegro_image -lallegro_physfs
+    LIBS  += -lallegro_monolith.dll
 
     #libphysfs (x64)
     #LIBS += -L$$PWD/../../libs/physfs-3.0.1/build-winx64/ -lphysfs

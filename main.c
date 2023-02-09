@@ -66,7 +66,7 @@ enum e_gameplay_state {
 };
 
 
-static int g_gamestate = E_GAMESTATE_PLAY;
+static int g_gamestate = E_GAMESTATE_MENU;
 static int g_gameplay = E_GAMEPLAY_START;
 static int g_actual_word = 0;
 static int32_t g_round = 1;
@@ -379,26 +379,8 @@ void main_render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
          if(i == 0){
 
-             //al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
+             al_draw_text(title_font_40, al_map_rgb(255,255,255), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
 
-             if(!al_use_shader(swirl_shader)){
-                 LOG("INVALID SHADER background");
-             }
-
-             if(!al_set_shader_float_vector("u_resolution", 2, (float*)res,1)){
-                  LOG_ERROR("Error: u_resolution not existent\n");
-             }
-
-
-
-
-             if(!al_set_shader_float("u_time", (float)al_get_timer_count(g_timer)/60)){
-                  LOG_ERROR("Error: u_resolution not existent\n");
-             }
-
-
-             al_draw_text(title_font_40, al_map_rgb(0,0,0), title_x+1, title_y + (i * 50) + 5,0,title_text[i]);
-             al_use_shader(NULL);
              continue;
 
          }
@@ -546,7 +528,6 @@ void main_render_gameplay(wordlist_t *sort)
 
     al_set_target_bitmap(g_screen);
     al_clear_to_color(al_map_rgb(0,0,0));
-    ALLEGRO_USTR *hit_buffer_utf8 = al_ustr_newf("%s",hit_buffer);
 
     const float res[][2] = {
                                 {al_get_display_width(g_dsp), al_get_display_height(g_dsp)},
@@ -581,11 +562,8 @@ void main_render_gameplay(wordlist_t *sort)
     al_draw_textf(title_font_40, text_color, w->x,w->y,0, "%s", w->word);
     //al_draw_ustr(title_font_40, al_map_rgb(220,220,220),w->x+1, w->y+1, 0, w->word_utf8);
     //al_draw_ustr(title_font_40, text_color,w->x, w->y, 0, w->word_utf8);
-    al_draw_ustr(title_font_40, al_map_rgb(255,0,0),w->x, w->y,0,hit_buffer_utf8);
-
-    al_ustr_free(hit_buffer_utf8);
-
-
+    //al_draw_ustr(title_font_40, al_map_rgb(255,0,0),w->x, w->y,0,hit_buffer_utf8);
+    al_draw_textf(title_font_40, al_map_rgb(255,0,0), w->x,w->y,0, "%s", hit_buffer);
 
 
 
@@ -771,7 +749,7 @@ int main(int argc, char **argv)
 
 
 
-    if(window_create_window("Trippy Typing", 1330,768,0,1,1) < 0){
+    if(window_create_window("Trippy Typing", 800,600,0,1,1) < 0){
        LOG_ERROR("Error! Game Cannot be Initialize");
        exit(1);
     }
@@ -992,9 +970,9 @@ int main(int argc, char **argv)
                 word_t *w = &sort_words->words[g_actual_word];
 
 
-                if(key_buffer[w->hit%255] == w->word[w->hit%255] && w->hit <= w->len && key_buffer[w->hit] != ' ' ){
-                    hit_buffer[w->hit%255] = w->word[w->hit%255];
-                    LOG("Hit %c\n", w->word[w->hit%255]);
+                if(key_buffer[w->hit] == w->word[w->hit] && w->hit <= w->len && key_buffer[w->hit] != ' ' ){
+                    hit_buffer[w->hit] = w->word[w->hit];
+                    LOG("Hit %c -> Hit Count: %d  = %d\n", w->word[w->hit], w->hit, w->len);
                      w->hit++;
                 }else  if(w->hit == w->len && (sort_words->total_words - g_remaining_words) > 0){
                     g_gameplay = E_GAMEPLAY_RESET;
