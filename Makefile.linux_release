@@ -1,0 +1,19 @@
+GCC=gcc
+CFLAGS=-std=c11 -Wall -Wextra -Werror -Wno-unused-function -Wno-switch -Wuninitialized -Wstrict-prototypes -s -O3 -fomit-frame-pointer
+
+INC=-I/usr/include
+LIBPATH=-L/usr/lib64
+LIBS=-lallegro -lallegro_audio -lallegro_acodec -lallegro_font -lallegro_ttf -lallegro_dialog -lallegro_image -lallegro_physfs  -lphysfs
+
+SRC=main.c\
+	particles.c\
+	words.c
+
+
+OBJ=main.o\
+	particles.o\
+	words.o
+
+
+all:$(OBJ)
+	$(GCC) $(CFLAGS) -o allegrotrippytyping $(LIBPATH) $(LIBS) $^
