@@ -77,3 +77,4 @@ debug/
 release/
 allegrotrippytyping
 !Makefile.linux_release
+game
