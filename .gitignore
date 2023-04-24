@@ -75,3 +75,6 @@ Thumbs.db
 vendor/liballegro-5.2.8-static
 debug/
 release/
+allegrotrippytyping
+!Makefile.linux_release
+game
