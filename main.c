@@ -766,6 +766,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+
+
     LOG("PhysFS Mounted at: /");
     al_set_physfs_file_interface();
     LOG("PhysFS Started");
@@ -793,6 +795,26 @@ int main(int argc, char **argv)
 #ifdef DEBUG
     window_log = al_open_native_text_log("DEBUG",ALLEGRO_TEXTLOG_MONOSPACE | ALLEGRO_TEXTLOG_NO_CLOSE);
 #endif
+
+    ALLEGRO_BITMAP *game_icon = NULL;
+
+    game_icon = al_load_bitmap("res//icon.png");
+
+    if(!game_icon){
+
+        game_icon = al_create_bitmap(64,64);
+        al_set_target_bitmap(game_icon);
+        al_clear_to_color(al_map_rgb(0,0,0));
+        ALLEGRO_FONT *fnt = al_create_builtin_font();
+        al_draw_textf(fnt,al_map_rgb(255,255,255), 0,0,0, "ATT");
+        al_set_target_backbuffer(g_dsp);
+        al_destroy_font(fnt);
+
+    }
+
+
+    al_set_display_icon(g_dsp, game_icon);
+
 
 
     background_bitmap = al_create_bitmap(al_get_display_width(g_dsp),al_get_display_height(g_dsp));
@@ -1130,6 +1152,11 @@ int main(int argc, char **argv)
 
     if(bg_gameplay){
         al_destroy_bitmap(bg_gameplay);
+    }
+
+    if(game_icon){
+        al_destroy_bitmap(game_icon);
+        game_icon = NULL;
     }
 
     particle_unset(&particle_mj);
