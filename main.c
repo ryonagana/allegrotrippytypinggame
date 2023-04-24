@@ -75,7 +75,8 @@ static int32_t g_round = 1;
 
 const char title_text[][1023] = { {" Allegro TRIPPY TYPING\0"},
                                   {"Entry for Krampus hack 2020-2020\0"},
-                                  {"Originally made with Raylib, converted to liballegro\0"},
+                                  {"Originally made with Raylib, converted to liballegro\0",},
+                                  {"\0"},
                                   {0}
                                 };
 
@@ -102,11 +103,11 @@ typedef struct round_modifier_t {
 
 static round_modifier_t g_round_modifier[9] = {
         {1.0f,10,9},
-        {1.2f,15,7},
+        {1.2f,12,7},
         {2.6f,20, 5},
         {2.8f,25, 4},
-        {2.99f,55,1},
-        {3.5f,55,1},
+        {2.99f,35,1},
+        {3.5f,45,1},
         {3.9f,55,1},
         {6.3f,55,1},
         {0,0,0}
@@ -128,6 +129,10 @@ sfx_t reset_sfx;
 
 static round_modifier_t actual_modifier;
 
+
+int random(int min, int max){
+   return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+}
 
 void main_game_reset(void);
 
@@ -369,7 +374,7 @@ void main_render_mainmenu(ALLEGRO_BITMAP *bg, float res[] ){
 
 
 
-    for(int i=0; i < 3; i++){
+    for(size_t i=0; i < sizeof(title_text) / sizeof(title_text[0]); i++){
         int tx,ty,tw,th;
 
          al_get_text_dimensions(title_font, title_text[i], &tx,&ty,&tw,&th);
@@ -579,7 +584,7 @@ void main_render_gameplay(wordlist_t *sort)
 
 void main_game_reset(void){
     int sort_size = rand() % 10 + actual_modifier.max_words;
-    sort_size = sort_size <= 1 ? rand() % (1 + actual_modifier.max_words) : sort_size;
+    sort_size = random(6,sort_size);  //sort_size <= 1 ? rand() % (1 + actual_modifier.max_words) : sort_size;
 
     wordlist_unset(&sort_words);
     sort_words  = NULL;
@@ -802,7 +807,8 @@ int main(int argc, char **argv)
 
 
 
-    al_set_standard_file_interface();
+    //al_set_standard_file_interface();
+    al_set_physfs_file_interface();
 
     if(argc < 2){
         if(words_load_file(&wordlist, "words") < 0){
@@ -820,7 +826,6 @@ int main(int argc, char **argv)
         }
     }
 
-    al_set_physfs_file_interface();
 
 
     int sort_size = rand() % 10 -1;

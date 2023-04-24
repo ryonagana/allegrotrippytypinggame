@@ -1,10 +1,11 @@
 #include "words.h"
+#include "allegro5/allegro_physfs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
-
+#include <allegro5/allegro5.h>
 
 
 void words_start(word_t **wordlist, int size)
@@ -40,9 +41,14 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
 {
     FILE * fp = NULL;
 
+    al_set_physfs_file_interface();
+
+
     if((fp = fopen(filepath,"rb")) == NULL){
         return -1;
     }
+
+    al_set_standard_file_interface();
 
     char line[255]  = {0};
     int line_count = 0;

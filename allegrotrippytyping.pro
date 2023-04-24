@@ -22,7 +22,7 @@ contains(QT_ARCH,i386){
 }
 
 QMAKE_CFLAGS_DEBUG += -Og -g -Wpedantic
-QMAKE_CFLAGS_RELEASE += -Wall -Wextra -s -O3 -Werror -fomit-frame-pointer
+QMAKE_CFLAGS_RELEASE += -O3 -D_FORTIFY_SOURCE=2 -fstack-clash-protection -pipe -Werror=format-security -Wl,-z,defs
 
 DEFINES += GAME_DATA_PACK
 #DEFINES += DEBUG
