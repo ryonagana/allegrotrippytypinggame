@@ -52,8 +52,8 @@ void particle_set_single(particle_t *p, float x, float y, float dx, float dy, AL
 void particle_update(particle_t *p, const int max)
 {
 
-    for(int i = 0; i < max; i++){
-        if(p[i].alive) continue;
+    for(int i = max; i >0; i--){
+        if(!p[i].alive) continue;
         p[i].x +=  p->dx * 1.5;
         p[i].y +=  p->dy * 1.5;
         p[i].ttl--;
@@ -65,7 +65,7 @@ void particle_update(particle_t *p, const int max)
 
     }
 
-    /*
+
     for(int i = 0; i < max;i++){
         if(!p->alive && p->ttl <= 0) continue;
 
@@ -91,7 +91,7 @@ void particle_update(particle_t *p, const int max)
 
 
     }
-    */
+
 }
 
 void particle_draw(const particle_t *p, ALLEGRO_BITMAP *bmp)

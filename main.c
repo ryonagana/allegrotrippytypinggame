@@ -27,6 +27,8 @@ ALLEGRO_BITMAP *mj = NULL;
 static ALLEGRO_TEXTLOG *window_log = NULL;
 
 static ALLEGRO_COLOR text_color;
+static ALLEGRO_COLOR text_shadow_color;
+
 
 struct window_status_t {
     char message[255];
@@ -506,7 +508,31 @@ void main_update_gameplay(wordlist_t *sort){
             memset(hit_buffer,0,sizeof(hit_buffer));
             al_flush_event_queue(g_queue);
             sort->words[g_actual_word].x = al_get_display_width(g_dsp) - al_get_text_width(title_font, sort->words[g_actual_word].word);
-            text_color = al_map_rgba(rand()%255,rand()%255,rand()%255,255);
+
+            int r,g,b;
+
+            r = random(0,255);
+            g = random(0,255);
+            b = random(0,255);
+
+
+
+            if(r >=255  ) r = random(65,128);
+
+            text_color = al_map_rgba(r,g,b,255);
+
+
+            r = random(0,255);
+            g = random(0,255);
+            b = random(0,255);
+
+            if(r >=255  ) r = random(65,128);
+
+
+            text_shadow_color = al_map_rgba(r,g,b,255);
+
+            //text_color = al_map_rgba(rand()%255,rand()%255,rand()%255,255);
+
             sfx_play(&hit_sfx,1.0,.5f, 1.0,ALLEGRO_PLAYMODE_ONCE);
             g_gameplay = E_GAMEPLAY_WAIT_KEY;
         }
@@ -568,7 +594,7 @@ void main_render_gameplay(wordlist_t *sort)
     //al_draw_ustr(title_font_40, al_map_rgb(220,220,220),w->x+1, w->y+1, 0, w->word_utf8);
     //al_draw_ustr(title_font_40, text_color,w->x, w->y, 0, w->word_utf8);
     //al_draw_ustr(title_font_40, al_map_rgb(255,0,0),w->x, w->y,0,hit_buffer_utf8);
-    al_draw_textf(title_font_40, al_map_rgb(255,0,0), w->x,w->y,0, "%s", hit_buffer);
+    al_draw_textf(title_font_40, text_shadow_color, w->x,w->y,0, "%s", hit_buffer);
 
 
 
