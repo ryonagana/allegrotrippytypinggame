@@ -22,7 +22,7 @@ contains(QT_ARCH,i386){
 }
 
 QMAKE_CFLAGS_DEBUG += -Og -g -Wpedantic
-QMAKE_CFLAGS_RELEASE += -O3 -D_FORTIFY_SOURCE=2 -fstack-clash-protection -pipe -Werror=format-security -Wl,-z,defs
+QMAKE_CFLAGS_RELEASE += -s -O3 -D_FORTIFY_SOURCE=2  -pipe -Werror=format-security -Wl,-z,defs
 
 DEFINES += GAME_DATA_PACK
 #DEFINES += DEBUG
@@ -30,39 +30,21 @@ DEFINES += GAME_DATA_PACK
 
 win32: {
 
+    INCLUDEPATH += D:\libs\allegro_5.2.8-x64\include
+    LIBS += -LD:\libs\allegro_5.2.8-x64\lib
+    LIBS += -lallegro.dll \
+            -lallegro_acodec.dll \
+            -lallegro_audio.dll \
+            -lallegro_dialog.dll \
+            -lallegro_font.dll \
+            -lallegro_ttf.dll \
+            -lallegro_color.dll \
+            -lallegro_physfs.dll \
+            -lallegro_image.dll \
+            -lallegro_primitives.dll
 
-
-
-
-
-    QMAKE_CFLAGS += -static
-
-    INCLUDEPATH += D:\libs\allegro_x86_64\include
-    INCLUDEPATH += D:\projetos\libs\liballegro-5.2.8-release\include
-    INCLUDEPATH += D:\projetos\libs\allegro-x86_64\allegro\include
-    INCLUDEPATH += D:\libs\liballegro-5.2.8-x64\include
-    INCLUDEPATH += include
-
-
-
-    #INCLUDEPATH += libs/jansson/mingw32_64/include
-    #LIBS += -Llibs\jansson\mingw32_64\lib
-    #LIBS +=
-    #LIBS += -Llibs/jansson/mingw32_64/lib
-    #LIBS += -L/home/archdark/projetos/c/openskigame/libs/jansson/linux/x64/lib
-   # LIBS += -LD:\programacao\C\openskigame\libs\jansson\mingw32_64\lib
-    #LIBS +=  -ljansson
-
-
-    #LIBS += -LD:\libs\allegro_x86_64\lib
-    #LIBS += -LD:\projetos\libs\allegro-x86_64\allegro\lib
-
-
-
-   # LIBS += -lallegro_monolith.dll
-
-    INCLUDEPATH += $$PWD/vendor/liballegro-5.2.8-static/include
-    LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/lib
+    #INCLUDEPATH += $$PWD/vendor/liballegro-5.2.8-static/include
+    #LIBS += -L$$PWD/vendor/liballegro-5.2.8-static/lib
 
 
     #WINDOWS LIBS

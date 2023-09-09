@@ -45,7 +45,15 @@ int words_load_file(wordlist_t *wordlist, const char *filepath)
 
 
     if((fp = fopen(filepath,"rb")) == NULL){
-        return -1;
+
+        fp = fopen(filepath,"w");
+        if(!fp){
+            return -1;
+        }
+
+        fprintf(fp,"no wordfile detected\n");
+        fclose(fp);
+        return 0;
     }
 
     al_set_standard_file_interface();

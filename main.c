@@ -742,7 +742,7 @@ void round_start(int round){
 
 int main(int argc, char **argv)
 {
-    srand(time(0));
+    srand(time(NULL));
 
     struct window_status_t status;
     window_status_init(&status);
@@ -791,6 +791,9 @@ int main(int argc, char **argv)
     int close = 0;
 
 
+
+    //set root as main directory
+    al_change_directory(argv[0]);
 
 #ifdef DEBUG
     window_log = al_open_native_text_log("DEBUG",ALLEGRO_TEXTLOG_MONOSPACE | ALLEGRO_TEXTLOG_NO_CLOSE);
@@ -846,14 +849,7 @@ int main(int argc, char **argv)
     main_load_shader(swirl_shader, NULL,"assets//shader//swirl_glsl_allegro.frag");
     main_load_shader(lavalamp_shader, NULL,"assets//shader//lavalamp_glsl_allegro.frag");
 
-
-
-
     al_use_shader(NULL);
-
-
-
-
 
     //al_set_standard_file_interface();
     al_set_physfs_file_interface();
